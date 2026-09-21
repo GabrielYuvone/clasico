@@ -106,7 +106,9 @@ export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libr
       // paga, y después redirige a nuestro back_url (el home). El webhook
       // que MP dispara al confirmar el pago va a marcar la compra como
       // "pagada" solo. El usuario no tiene que confirmar nada.
-      const link = data.sandboxInitPoint || data.initPoint
+      // En producción usamos initPoint (mundo real); en desarrollo caemos a
+      // sandboxInitPoint (pagos de prueba). El backend decide cuál devuelve.
+      const link = data.initPoint || data.sandboxInitPoint
       if (!link) {
         toast.error('Mercado Pago no devolvió un link de pago.')
         return
