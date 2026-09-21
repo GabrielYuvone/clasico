@@ -32,12 +32,13 @@ type FeedItem = {
 
 type Config = {
   precio: number
+  aliasMP?: string
   capacidad: number
   maxPorCompra: number
   ocupadas: number
   libres: number
   cobraDeVerdad: boolean
-  modoPrueba: boolean
+  permiteAmigo: boolean
 }
 
 // Ranking: por hinchas desc, desempate por nombre asc.
@@ -159,7 +160,7 @@ export default function Home() {
               100.000 lugares para tu club
             </h1>
             <p className="mt-1 text-[11px] tracking-wider uppercase">
-              Elegí tu club · meté hinchas · pintá la tribuna · <span className="text-red-700">modo prueba: gratis y sin registro</span>
+              Elegí tu club · meté hinchas · pintá la tribuna · <span className="text-red-700">{config?.precio ? `$${config.precio} por hincha · ` : ''}pagá con Mercado Pago o soy amigo</span>
             </p>
           </div>
           <div className="hidden sm:flex items-center px-3 border-l-4 border-black">
@@ -233,7 +234,7 @@ export default function Home() {
                 >
                   ¡Meto hinchas!
                 </button>
-                <div className="text-[9px] text-center mt-2 uppercase">gratis · sin registro</div>
+                <div className="text-[9px] text-center mt-2 uppercase">{config?.precio ? `$${config.precio} por hincha · ` : 'gratis '}· o «soy amigo»</div>
               </div>
             </aside>
 
@@ -496,7 +497,7 @@ export default function Home() {
 
         {/* ---------- Footer ---------- */}
         <footer className="mt-3.5 bg-black text-gray-300 border-4 border-black flex justify-between items-center flex-wrap gap-2.5 px-3.5 py-2 text-[10px] uppercase">
-          <span>La Tribuna · estadio virtual · modo prueba</span>
+          <span>La Tribuna · estadio virtual · {config?.aliasMP ? `pagá a ${config.aliasMP} o «soy amigo»` : 'modo prueba'}</span>
           <span className="border-2 border-yellow-300 text-yellow-300 px-2 py-1">
             {nf(ocupadas)} / {nf(capacidad)} · {pf(pct)} llena
           </span>
@@ -519,6 +520,7 @@ export default function Home() {
         clubs={clubs as unknown as ClubLite[]}
         preselectSlug={selectedSlug}
         libres={libres}
+        config={config}
         onBought={onBought}
       />
     </div>

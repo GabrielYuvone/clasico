@@ -6,8 +6,12 @@ export const dynamic = 'force-dynamic'
 const CAPACIDAD = 100000
 const MAX_POR_COMPRA = 2000
 
-// POST /api/buy — sumar hinchas a un club. GRATIS, sin registro.
-// Body: { slug: string, cantidad: number, nombre?: string, mensaje?: string }
+// POST /api/buy — sumar hinchas a un club. Sin registro.
+// Body: { slug, cantidad, nombre?, mensaje?, amigo?: boolean }
+//   - amigo=true  → compra gratuita (modo "soy amigo" / prueba)
+//   - amigo=false → compra paga (el front ya abrió Mercado Pago con el alias)
+// En ambos casos registrábamos la compra. El pago real lo hace el visitante
+// en Mercado Pago; el backend solo asienta la compra cuando el front lo pida.
 export async function POST(req: Request) {
   let body: any
   try {
@@ -20,6 +24,7 @@ export async function POST(req: Request) {
   const cantidad = Math.floor(Number(body.cantidad) || 0)
   const nombre = body.nombre ? String(body.nombre).trim().slice(0, 40) : null
   const mensaje = body.mensaje ? String(body.mensaje).trim().slice(0, 140) : null
+  const amigo = Boolean(body.amigo)
 
   if (!slug) return NextResponse.json({ ok: false, error: 'Falta el club' }, { status: 400 })
   if (!cantidad || cantidad < 1)
@@ -60,5 +65,6 @@ export async function POST(req: Request) {
     nombre: purchase.nombre,
     mensaje: purchase.mensaje,
     fecha: purchase.createdAt.toISOString(),
+    amigo, // para que el front sepa cómo llegó
   })
 }

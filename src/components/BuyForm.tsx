@@ -17,18 +17,25 @@ export type ClubLite = {
   color2?: string
 }
 
+type Config = {
+  precio: number
+  aliasMP?: string
+  permiteAmigo: boolean
+}
+
 type Props = {
   open: boolean
   onOpenChange: (v: boolean) => void
   clubs: ClubLite[]
   preselectSlug?: string | null
   libres: number
+  config?: Config | null
   onBought: () => void
 }
 
 const PICKS = [1, 5, 10, 50, 100, 500, 1000]
 
-export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libres, onBought }: Props) {
+export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libres, config, onBought }: Props) {
   const [slug, setSlug] = useState<string>(preselectSlug || '')
   const [cantidad, setCantidad] = useState<number>(10)
   const [custom, setCustom] = useState<string>('')
@@ -49,39 +56,86 @@ export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libr
   const selectedClub = useMemo(() => clubs.find((c) => c.slug === slug) || null, [clubs, slug])
 
   const qty = custom ? Math.max(1, Math.min(2000, Math.floor(Number(custom) || 0))) : cantidad
+  const precio = config?.precio ?? 0
+  const alias = config?.aliasMP || ''
+  const total = precio * qty
 
-  async function submit() {
+  // Link de Mercado Pago al alias. mpago.la/<alias> soporta ?amount para
+  // pre-cargar el monto (ARS). Es el formato público sin tener que crear
+  // una preferencia de pago por API.
+  const mpLink = alias
+    ? `https://mpago.la/${alias}${total > 0 ? `?amount=${total}` : ''}`
+    : ''
+
+  async function postBuy(amigo: boolean) {
     if (!slug) {
       toast.error('Elegí un club primero.')
-      return
+      return null
     }
     if (!qty || qty < 1) {
       toast.error('Poné una cantidad válida (1 a 2.000).')
-      return
+      return null
     }
     if (qty > libres) {
       toast.error(`Solo quedan ${nf(libres)} lugares.`)
-      return
+      return null
     }
     setSubmitting(true)
     try {
       const res = await fetch('/api/buy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug, cantidad: qty, nombre: nombre || undefined, mensaje: mensaje || undefined }),
+        body: JSON.stringify({ slug, cantidad: qty, nombre: nombre || undefined, mensaje: mensaje || undefined, amigo }),
       })
       const data = await res.json()
       if (!data.ok) {
         toast.error(data.error || 'No se pudo agregar.')
-        return
+        return null
       }
+      return data
+    } catch (e) {
+      toast.error('Error de red. Probá de nuevo.')
+      return null
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function pagarConMP() {
+    if (!mpLink) {
+      toast.error('No hay alias de Mercado Pago configurado.')
+      return
+    }
+    if (!slug) { toast.error('Elegí un club primero.'); return }
+    if (qty > libres) { toast.error(`Solo quedan ${nf(libres)} lugares.`); return }
+    if (qty < 1) { toast.error('Poné una cantidad válida.'); return }
+
+    // Abrimos Mercado Pago en otra pestaña y avisamos al usuario que
+    // después de pagar vuelva y confirme.
+    window.open(mpLink, '_blank', 'noopener,noreferrer')
+    toast(
+      `Se abrió Mercado Pago. Pagá $${nf(total)} a "${alias}" y después tocá "Ya pagué".`,
+      { duration: 7000 }
+    )
+    // NO registramos la compra todavía: esperamos la confirmación del
+    // usuario (podría no haber pagado). El botón "Ya pagué" la dispara.
+  }
+
+  async function confirmarPago() {
+    const data = await postBuy(false)
+    if (data) {
       toast.success(`¡Listo! ${nf(qty)} ${qty === 1 ? 'hincha' : 'hinchas'} para ${data.club}.`)
       onBought()
       onOpenChange(false)
-    } catch (e) {
-      toast.error('Error de red. Probá de nuevo.')
-    } finally {
-      setSubmitting(false)
+    }
+  }
+
+  async function soyAmigo() {
+    const data = await postBuy(true)
+    if (data) {
+      toast.success(`¡Listo! ${nf(qty)} ${qty === 1 ? 'hincha' : 'hinchas'} para ${data.club} (modo amigo).`)
+      onBought()
+      onOpenChange(false)
     }
   }
 
@@ -93,7 +147,7 @@ export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libr
             Metelos a la cancha
           </DialogTitle>
           <DialogDescription className="font-mono text-xs uppercase">
-            En modo prueba es gratis y sin registro. Sumá hinchas y pintá la tribuna de tu color.
+            Sumá hinchas para tu club y pintá la tribuna. Pagá con Mercado Pago o, si sos amigo, saltate el pago.
           </DialogDescription>
         </DialogHeader>
 
@@ -198,21 +252,55 @@ export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libr
             <div className="text-[10px] text-gray-500 text-right">{mensaje.length} / 140</div>
           </div>
 
-          {/* Total (gratis en prueba) */}
+          {/* Total */}
           <div className="flex items-center justify-between bg-yellow-300 border-4 border-black px-3 py-2">
-            <span className="font-mono font-bold uppercase text-xs">Total</span>
-            <span className="font-mono font-bold text-2xl text-red-700">
-              $0
-              <span className="text-[10px] uppercase ml-2 text-black font-mono">modo prueba</span>
+            <span className="font-mono font-bold uppercase text-xs">
+              Total · {nf(qty)} {qty === 1 ? 'hincha' : 'hinchas'} × ${precio}
             </span>
+            <span className="font-mono font-bold text-2xl text-red-700">${nf(total)}</span>
           </div>
 
+          {/* Botón PAGAR con Mercado Pago */}
+          {alias && (
+            <div className="space-y-2">
+              <Button
+                onClick={pagarConMP}
+                disabled={submitting || !slug}
+                className="w-full border-4 border-black bg-[#00b1ea] hover:bg-[#0096c7] text-white font-mono font-bold uppercase tracking-wide rounded-none shadow-[4px_4px_0_rgba(0,0,0,0.55)] disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                Pagar ${nf(total)} con Mercado Pago
+              </Button>
+              <div className="text-[10px] text-center text-gray-600 uppercase">
+                alias: <b>{alias}</b> · te abre Mercado Pago en otra pestaña
+              </div>
+              {/* Confirmación post-pago */}
+              <Button
+                onClick={confirmarPago}
+                disabled={submitting || !slug}
+                className="w-full border-4 border-black bg-green-700 hover:bg-green-800 text-white font-mono font-bold uppercase tracking-wide rounded-none shadow-[4px_4px_0_rgba(0,0,0,0.55)] disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {submitting ? 'Sumando…' : 'Ya pagué · meter hinchas'}
+              </Button>
+              <div className="text-[10px] text-center text-gray-600">
+                Después de pagar en Mercado Pago, volvé y tocá acá para meter los hinchas.
+              </div>
+            </div>
+          )}
+
+          {/* Separador */}
+          <div className="flex items-center gap-3 my-1">
+            <div className="flex-1 h-[3px] bg-black" />
+            <span className="text-[10px] uppercase text-gray-600 font-mono font-bold">o</span>
+            <div className="flex-1 h-[3px] bg-black" />
+          </div>
+
+          {/* Botón SOY AMIGO (no paga) */}
           <Button
-            onClick={submit}
+            onClick={soyAmigo}
             disabled={submitting || !slug}
-            className="w-full border-4 border-black bg-green-700 hover:bg-green-800 text-white font-mono font-bold uppercase tracking-wide rounded-none shadow-[4px_4px_0_rgba(0,0,0,0.55)] disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full border-4 border-black bg-yellow-300 hover:bg-yellow-400 text-black font-mono font-bold uppercase tracking-wide rounded-none shadow-[4px_4px_0_rgba(0,0,0,0.55)] disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {submitting ? 'Sumando…' : 'Meter hinchas'}
+            🤝 Soy amigo · meter sin pagar
           </Button>
 
           <p className="text-[10px] text-gray-600 leading-relaxed text-center">
