@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La Popular</title>
+<link rel="stylesheet" href="estilo.css">
+<meta name="description" content="100.000 hinchas para todo el fútbol argentino. Cada uno sale $100. Sumá los de tu club antes de que se los quede otra hinchada.">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#35603f">
+<!-- Al compartir. https://lapopular.online lo reemplaza el servidor con la variable BASE_URL:
+     para cambiar de dominio no hay que tocar este archivo. -->
+<meta property="og:url" content="https://lapopular.online/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="La Popular">
+<meta property="og:locale" content="es_AR">
+<meta property="og:title" content="La Popular">
+<meta property="og:description" content="100.000 hinchas para todo el fútbol argentino. Cada uno sale $100. Sumá los de tu club antes de que se los quede otra hinchada.">
+<meta property="og:image" content="https://lapopular.online/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="La cancha de La Popular, con las tribunas pintadas de los colores de cada club.">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+
+
+  /* ---------- grilla principal ---------- */
+  .grid { display: grid; grid-template-columns: 250px minmax(0, 1fr) 250px; gap: 14px; align-items: start; }
+  /* La cancha primero, en escritorio y en celular: banderas, estadio, y recien
+     despues el cartel del aforo. Primero se ve, despues se lee. */
+  .stage { display: flex; flex-direction: column; }
+  .stage > .flags       { order: 1; }
+  .stage > .stadium-box { order: 2; }
+  .stage > .stage-note  { order: 3; }
+  .stage > .aforo-card  { order: 4; margin: 12px 0 0; }
+  .stage > .meme-banner { order: 5; }
+  .stage > .card        { order: 6; }
+  /* Cartel de "listo" cuando se llega desde la pantalla de pago: arriba de todo. */
+  .stage > .listo-banner { order: -1; }
+  .listo-banner { background: var(--green); color: #fff; border: 4px solid var(--ink); box-shadow: 6px 6px 0 rgba(0,0,0,.55);
+    padding: 12px 14px; margin-bottom: 12px; font-size: 17px; text-transform: uppercase; line-height: 1.2;
+    display: flex; align-items: center; gap: 12px; }
+  .listo-banner .t { flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%; background: #fff; color: var(--green);
+    border: 3px solid var(--ink); display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  /* Variante para quien llega con el link de su club (/c/talleres): amarillo,
+     con el escudo y el boton de sumar a ESE club. */
+  .listo-banner.club { background: var(--yellow); color: var(--ink); flex-wrap: wrap; }
+  .listo-banner.club img { width: 46px; height: 46px; object-fit: contain; background: #fff; border: 3px solid var(--ink); padding: 3px; flex-shrink: 0; }
+  .listo-banner.club .txt { flex: 1; min-width: 180px; }
+  .listo-banner.club .txt b { color: var(--red); }
+  .listo-banner.club .cta-btn { flex: 1 1 100%; margin-top: 2px; font-size: 16px; }
+
+  @media (max-width: 1080px) {
+    .grid { grid-template-columns: 1fr; }
+    /* En una sola columna el centro va PRIMERO. Si no, hay que pasar por el
+       Top 3, el total y el boton antes de ver de que se trata el sitio. */
+    .grid > main { order: -1; }
+  }
+  /* En el celular, cuantos faltan va ARRIBA de todo: es lo primero que se lee
+     y lo que empuja a comprar. En escritorio sigue debajo de la cancha. */
+  @media (max-width: 640px) {
+    .stage > .aforo-card { order: 0; margin: 0 0 10px; }
+    .faltan { font-size: 12px; margin-bottom: 6px; }
+    .faltan b { font-size: 20px; }
+  }
+
+
+
+  /* top 3 */
+  .top-row { display: flex; align-items: center; gap: 7px; padding: 6px 0; border-bottom: 2px dotted #b9b3a0; }
+  .top-row:last-of-type { border-bottom: none; }
+  .top-pos { font-size: 13px; width: 18px; flex-shrink: 0; }
+  .top-info { min-width: 0; flex: 1; }
+  .top-name { font-size: 11px; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .top-pct { font-size: 14px; }
+
+  /* total */
+  .total-num { font-size: 33px; line-height: 1; color: var(--green); text-align: center; }
+  .total-sub { font-size: 10px; text-align: center; text-transform: uppercase; margin-top: 3px; }
+  .total-note { font-size: 9.5px; text-align: center; border: 2px solid var(--ink); padding: 5px; margin-top: 10px; text-transform: uppercase; }
+
+  /* cta */
+  .cta-card { background: #fff6c9; }
+  .cta-t1 { font-size: 15px; color: var(--red); text-transform: uppercase; line-height: 1.15; }
+  .cta-t2 { font-size: 13px; text-transform: uppercase; line-height: 1.2; margin-top: 2px; }
+
+
+  /* como funciona */
+  .how-row { display: flex; gap: 9px; align-items: flex-start; padding: 8px 0; border-bottom: 2px dotted #b9b3a0; }
+  .how-row:last-of-type { border-bottom: none; }
+  .how-ico { width: 26px; flex-shrink: 0; display: grid; grid-template-columns: repeat(3, 7px); gap: 2px; }
+  .how-ico i { width: 7px; height: 7px; background: var(--green); display: block; }
+  .how-ico i.off { background: transparent; border: 1px solid #9aa; }
+  .how-txt { font-size: 9.5px; line-height: 1.45; text-transform: uppercase; }
+
+  /* ranking lateral */
+  .rank-head { display: flex; justify-content: space-between; font-size: 8.5px; text-transform: uppercase;
+    color: #7a7466; border-bottom: 3px solid var(--ink); padding-bottom: 4px; }
+  .rank-list { max-height: 322px; overflow-y: auto; }
+  .rank-row { display: flex; align-items: center; gap: 6px; padding: 5px 2px; border-bottom: 2px dotted var(--dot); cursor: pointer; }
+  .rank-row:hover { background: #ffeeb0; }
+  .rank-row:last-child { border-bottom: none; }
+  .rank-pos { font-size: 11px; width: 21px; flex-shrink: 0; color: #7a7466; }
+  .rank-row.podio .rank-pos { color: var(--red); font-size: 13px; }
+  .rank-row .sw { width: 12px; height: 12px; border-width: 2px; }
+  .rank-nm { flex: 1; min-width: 0; font-size: 9.5px; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rank-pct { font-size: 10.5px; flex-shrink: 0; }
+
+  /* ---------- estadio ---------- */
+  .stage { position: relative; }
+  /* Banderas del podio: trapos con los colores y el escudo del club, no
+     rectangulos de color plano. El numero de puesto va como parche cosido. */
+  .flags { position: relative; min-height: 168px; display: flex; align-items: flex-end; justify-content: center; gap: 3%; }
+  .flag { position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+  .flag .pole { width: 7px; background: linear-gradient(90deg,#8f96a3 0 40%, #6b7280 40% 100%); border: 2px solid var(--ink); }
+  .flag .cloth {
+    position: relative; border: 3px solid var(--ink); padding: 7px 9px 6px;
+    box-shadow: 5px 5px 0 rgba(0,0,0,.5); text-align: center; overflow: hidden;
+  }
+  /* franjas del trapo, con el color secundario del club */
+  .flag .bands { position: absolute; inset: 0; opacity: .92; }
+  .flag .cloth > *:not(.bands) { position: relative; }
+  .flag .cloth-top { display: flex; align-items: center; justify-content: center; gap: 7px; }
+  .flag .num { line-height: .85; color: #fff; -webkit-text-stroke: 2px #111; paint-order: stroke fill; }
+  .flag .crest { background: #fff; border: 2px solid var(--ink); padding: 2px; display: block; object-fit: contain; }
+  .flag .nm {
+    font-size: 9.5px; letter-spacing: .5px; text-transform: uppercase; margin-top: 4px; color: #fff;
+    text-shadow: 1.5px 0 0 #111, -1.5px 0 0 #111, 0 1.5px 0 #111, 0 -1.5px 0 #111;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 132px;
+  }
+  .flag.f1 .pole { height: 74px; }
+  .flag.f2 .pole { height: 52px; }
+  .flag.f3 .pole { height: 34px; }
+  .flag.f1 .num { font-size: 32px; }  .flag.f1 .crest { width: 34px; height: 34px; }
+  .flag.f2 .num { font-size: 26px; }  .flag.f2 .crest { width: 28px; height: 28px; }
+  .flag.f3 .num { font-size: 22px; }  .flag.f3 .crest { width: 24px; height: 24px; }
+  .flag.f2 .nm, .flag.f3 .nm { font-size: 8.5px; }
+
+  /* ---------- banner del hincha ---------- */
+  .meme-banner { display: flex; align-items: flex-end; gap: 4px; background: var(--yellow); border: 4px solid var(--ink);
+    box-shadow: 6px 6px 0 rgba(0,0,0,.55); margin-top: 14px; padding: 0 14px 0 4px; overflow: hidden; }
+  .meme-banner img { width: 190px; max-width: 38%; display: block; margin-bottom: -4px; }
+  .meme-txt { flex: 1; min-width: 0; padding: 14px 0; }
+  .meme-t1 { font-size: clamp(15px, 2.4vw, 24px); text-transform: uppercase; line-height: 1.05; color: var(--red); }
+  .meme-t2 { font-size: 10.5px; text-transform: uppercase; line-height: 1.35; margin-top: 5px; }
+  .meme-banner .cta-btn { max-width: 260px; }
+  @media (max-width: 560px) { .meme-banner img { display: none; } .meme-banner { padding: 0 12px; } }
+
+    /* El estadio va suelto sobre el fondo verde, sin recuadro: el cuenco ya tiene
+     su propio contorno duro y el marco negro lo encajonaba. */
+  .stadium-box { line-height: 0; }
+  #estadioCanvas { display: block; width: 100%; height: auto; cursor: pointer; }
+  .stage-note { font-size: 9px; color: #cfe0d4; text-align: right; margin-top: 5px; font-weight: normal; }
+
+  /* aforo */
+  .aforo-card { background: var(--panel); border: 4px solid var(--ink); box-shadow: 6px 6px 0 rgba(0,0,0,.55); padding: 10px 12px; margin-bottom: 12px; }
+  .aforo-top { display: flex; justify-content: space-between; font-size: 11px; text-transform: uppercase; margin-bottom: 6px; }
+  .aforo-track { height: 15px; background: #ddd8c6; border: 3px solid var(--ink); overflow: hidden; }
+  .aforo-fill { height: 100%; background: var(--red); width: 0; }
+  .faltan { font-size: 13px; text-transform: uppercase; margin-bottom: 8px; }
+  .faltan b { font-size: 22px; color: var(--red); }
+
+  /* ficha de club */
+  .club-crest { width: 62px; height: 62px; display: block; margin: 0 auto 7px; object-fit: contain; border: 3px solid var(--ink); background: #fff; padding: 4px; }
+  .club-name { font-size: 15px; text-align: center; text-transform: uppercase; line-height: 1.1; }
+  .club-apodo { font-size: 10px; text-align: center; color: #666; margin-bottom: 9px; font-weight: normal; }
+  .club-stat { display: flex; justify-content: space-between; font-size: 10.5px; padding: 3px 0; border-bottom: 2px dotted #b9b3a0; text-transform: uppercase; }
+  .gap-note { background: var(--yellow); border: 3px solid var(--ink); padding: 7px; margin: 9px 0; font-size: 10px; text-align: center; line-height: 1.4; text-transform: uppercase; }
+  .gap-note b { color: var(--red); }
+
+  /* feed */
+  .feed-row { display: flex; gap: 8px; align-items: flex-start; padding: 7px 0; border-bottom: 2px dotted #b9b3a0; }
+  .feed-row:last-child { border-bottom: none; }
+  .feed-av { width: 26px; height: 26px; border: 2px solid var(--ink); background: #fff; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .feed-av img { width: 80%; height: 80%; object-fit: contain; }
+  .feed-t { font-size: 10.5px; text-transform: uppercase; }
+  .feed-m { font-size: 10px; font-weight: normal; color: #555; margin-top: 2px; }
+  .feed-time { font-size: 9px; color: #888; font-weight: normal; white-space: nowrap; }
+  .feed-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+  @media (max-width: 700px) { .feed-cols { grid-template-columns: 1fr; } }
+
+
+</style>
+</head>
+<body data-page="tribuna">
+<div class="wrap">
+
+  <div id="chrome-header"></div>
+
+  <div class="grid">
+
+    <!-- ---------- columna izquierda ---------- -->
+    <aside>
+      <div class="card">
+        <div class="card-head pix">Top 3</div>
+        <div class="card-body">
+          <div id="top3"></div>
+          <a class="card-link" href="estadisticas.html">Ver ranking completo »</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head pix">Hinchas en la cancha</div>
+        <div class="card-body">
+          <div class="total-num pix cargando" id="totalNum">00.000</div>
+          <div class="total-sub">metidos hasta ahora</div>
+          <div class="total-note">La cancha se llena con 100.000</div>
+        </div>
+      </div>
+
+      <div class="card cta-card">
+        <div class="card-body">
+          <div class="cta-t1 pix">Sumá un hincha</div>
+          <div class="cta-t2 pix">y hacé crecer a tu club</div>
+          <a class="cta-btn pix" href="comprar.html">¡Meto uno!</a>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ---------- centro: estadio ---------- -->
+    <main class="stage">
+      <div class="listo-banner pix" id="listoBanner" style="display:none"></div>
+      <div class="flags" id="flags"></div>
+
+      <div class="aforo-card">
+        <div class="faltan pix">Faltan <b id="faltanNum" class="cargando">00.000</b> hinchas para llenar la cancha</div>
+        <div class="aforo-top"><span>Cuánto falta para llenarla</span><span id="aforoPct" class="cargando">00,00%</span></div>
+        <div class="aforo-track"><div class="aforo-fill" id="aforoFill"></div></div>
+      </div>
+
+      <div class="stadium-box"><canvas id="estadioCanvas"></canvas></div>
+      <div class="stage-note" id="stageNote"></div>
+
+      <div class="meme-banner" id="memeBanner" style="display:none">
+        <img id="memeImg" src="meme.png" alt="Andá a la cancha, bobo">
+        <div class="meme-txt">
+          <div class="meme-t1 pix" id="memeT1">¿Vas a dejar que te pasen?</div>
+          <div class="meme-t2" id="memeT2">Cada lugar que no llena tu club, se lo queda otro.</div>
+          <a class="cta-btn pix" href="comprar.html">¡Meto los míos!</a>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div class="card-head pix">Últimos en entrar</div>
+        <div class="card-body"><div class="feed-cols" id="feedList"></div></div>
+      </div>
+    </main>
+
+    <!-- ---------- columna derecha ---------- -->
+    <aside>
+      <div class="card" id="cardComo">
+        <div class="card-head pix">Llená la cancha</div>
+        <div class="card-body">
+          <div class="how-row">
+            <div class="how-ico"><i></i><i class="off"></i><i></i><i class="off"></i><i></i><i class="off"></i><i></i><i class="off"></i><i></i></div>
+            <div class="how-txt">Metés hinchas y pintás cancha para tu club.</div>
+          </div>
+          <div class="how-row">
+            <div class="how-ico"><i></i><i></i><i></i><i class="off"></i><i></i><i class="off"></i><i></i><i class="off"></i><i></i></div>
+            <div class="how-txt">Entran 100.000 y ni uno más.</div>
+          </div>
+          <div class="how-row">
+            <div class="how-ico"><i class="off"></i><i></i><i class="off"></i><i class="off"></i><i></i><i class="off"></i><i></i><i></i><i></i></div>
+            <div class="how-txt">Cuando se llena, queda así para siempre.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="cardRef">
+        <div class="card-head pix">Ranking</div>
+        <div class="card-body">
+          <div class="rank-head"><span>Club</span><span>De la cancha</span></div>
+          <div class="rank-list" id="rankList"></div>
+          <a class="card-link" href="estadisticas.html">Ver ranking completo »</a>
+        </div>
+      </div>
+
+      <div class="card" id="cardClub" style="display:none">
+        <div class="card-head pix">Ficha del club</div>
+        <div class="card-body" id="clubDetail"></div>
+      </div>
+    </aside>
+  </div>
+
+  <div id="chrome-footer"></div>
+</div>
+
+<script src="chrome.js"></script>
+<script src="estadio.js"></script>
+<script>
+// El aforo lo manda el servidor (/api/config). Este valor es solo el respaldo
+// por si la llamada falla: la fuente de verdad esta en server.js.
+var CAPACITY = 100000;
+
+function nf(n) { return (n || 0).toLocaleString('es-AR'); }
+function pf(n) { return String(n).replace('.', ',') + '%'; }
+function hinchas(n) { return nf(n) + (n === 1 ? ' hincha' : ' hinchas'); }
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, function(c) {
+    return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+  });
+}
+function isHex(h) { return typeof h === 'string' && /^#[0-9a-fA-F]{6}$/.test(h); }
+function colorDe(c) { return isHex(c.color) ? c.color : '#8a8a8a'; }
+// Para cuadraditos y porcentajes sobre el panel crema. El estadio y las
+// banderas siguen usando colorDe(), que es el color real del club.
+function colorLegible(c) { return window.ColorClub(c.color, c.color2); }
+// Mismo desempate que el ranking completo, para que las dos pantallas coincidan.
+function ordenRanking(a, b) {
+  if (b.count !== a.count) return b.count - a.count;
+  return a.name.localeCompare(b.name, 'es');
+}
+// Saca la barra gris de carga y escribe el valor de verdad.
+function llenar(id, texto) {
+  var el = document.getElementById(id);
+  el.classList.remove('cargando');
+  el.textContent = texto;
+}
+function shade(hex, amt) {
+  if (!isHex(hex)) return '#666';
+  var r = parseInt(hex.substr(1,2),16), g = parseInt(hex.substr(3,2),16), b = parseInt(hex.substr(5,2),16);
+  return 'rgb(' + Math.round(r*amt) + ',' + Math.round(g*amt) + ',' + Math.round(b*amt) + ')';
+}
+// Franjas del trapo con el segundo color del club. Si los dos colores son el
+// mismo (o falta el segundo), se usa un tono mas oscuro para que la bandera no
+// quede como un rectangulo liso.
+function franjas(c, alto) {
+  var a = colorDe(c);
+  var b = (isHex(c.color2) && c.color2.toLowerCase() !== a.toLowerCase()) ? c.color2 : shade(a, 0.62);
+  return 'repeating-linear-gradient(180deg, transparent 0 ' + alto + 'px, ' + b + ' ' + alto + 'px ' + (alto*2) + 'px)';
+}
+function timeAgo(iso) {
+  var m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (m < 1) return 'recién';
+  if (m < 60) return 'hace ' + m + ' min';
+  var h = Math.round(m / 60);
+  if (h < 24) return 'hace ' + h + ' h';
+  return 'hace ' + Math.round(h / 24) + ' d';
+}
+
+
+Promise.all([
+  fetch('/api/clubes').then(function(r) { return r.json(); }),
+  fetch('/api/feed').then(function(r) { return r.json(); }),
+  fetch('/api/config').then(function(r) { return r.json(); }).catch(function() { return null; })
+]).then(function(res) {
+  var raw = res[0], feed = res[1], cfg = res[2];
+  if (cfg && cfg.capacidad) CAPACITY = cfg.capacidad;
+  var vendidas = raw.reduce(function(s, c) { return s + (c.hinchas || 0); }, 0);
+  var libres = Math.max(0, CAPACITY - vendidas);
+  var pct = Math.round(vendidas / CAPACITY * 10000) / 100;
+
+  var clubs = raw.map(function(c) {
+    return {
+      name: c.club, apodo: c.apodo, file: c.archivo_escudo,
+      color: c.color_principal, color2: c.color_secundario,
+      count: c.hinchas || 0,
+      value: Math.round((c.hinchas || 0) / CAPACITY * 10000) / 100
+    };
+  });
+  var ranked = clubs.slice().sort(ordenRanking);
+  ranked.forEach(function(c, i) { c.rank = i + 1; });
+  var conHinchas = ranked.filter(function(c) { return c.count > 0; });
+
+  // ----- cifras -----
+  llenar('totalNum', nf(vendidas));
+  llenar('faltanNum', nf(libres));
+  llenar('aforoPct', pf(pct) + ' llena');
+  document.getElementById('aforoFill').style.width = Math.max(vendidas > 0 ? 0.6 : 0, pct) + '%';
+
+  // ----- cancha llena: se acabo la edicion -----
+  // Cuando no quedan lugares no se puede seguir invitando a comprar: el boton
+  // llevaria a un formulario que va a fallar. Se cambia por el resultado final.
+  if (libres <= 0) {
+    document.querySelector('.faltan').innerHTML = '<b>La cancha se llenó.</b> Este es el resultado final.';
+    var cta = document.querySelector('.cta-card .card-body');
+    if (cta) {
+      cta.innerHTML =
+        '<div class="cta-t1 pix">Se llenó</div>' +
+        '<div class="cta-t2 pix">edición cerrada</div>' +
+        '<a class="cta-btn pix" href="estadisticas.html">Ver resultado final</a>';
+    }
+    document.getElementById('memeBanner').style.display = 'none';
+  }
+
+  // ----- top 3 + banderas -----
+  var top3 = document.getElementById('top3');
+  var flags = document.getElementById('flags');
+  var etiquetas = ['1º', '2º', '3º'];
+  if (!conHinchas.length) {
+    top3.innerHTML = '<div class="empty-note">Todavía no entró nadie al estadio.</div>';
+  }
+  conHinchas.slice(0, 3).forEach(function(c, i) {
+    var row = document.createElement('div');
+    row.className = 'top-row';
+    row.style.cursor = 'pointer';
+    row.innerHTML =
+      '<div class="top-pos pix">' + etiquetas[i] + '</div>' +
+      '<div class="sw" style="background:' + colorLegible(c) + '"></div>' +
+      '<div class="top-info"><div class="top-name">' + esc(c.apodo || c.name) + '</div></div>' +
+      '<div class="top-pct pix" style="color:' + colorLegible(c) + '">' + (c.value > 0 ? pf(c.value) : '&lt;0,01%') + '</div>';
+    row.addEventListener('click', function() { verClub(c); });
+    top3.appendChild(row);
+
+    var f = document.createElement('div');
+    f.className = 'flag f' + (i + 1);
+    var alto = [15, 12, 10][i];
+    f.innerHTML =
+      '<div class="cloth" style="background:' + colorDe(c) + '">' +
+        '<div class="bands" style="background:' + franjas(c, alto) + '"></div>' +
+        '<div class="cloth-top">' +
+          '<div class="num pix">' + etiquetas[i] + '</div>' +
+          '<img class="crest" src="escudos/' + esc(c.file) + '" alt="">' +
+        '</div>' +
+        '<div class="nm pix">' + esc(c.apodo || c.name) + '</div>' +
+      '</div><div class="pole"></div>';
+    f.title = c.name;
+    f.addEventListener('click', function() { verClub(c); });
+    flags.appendChild(f);
+  });
+
+  // ----- banner del hincha: solo aparece si el archivo meme.png existe -----
+  var memeImg = document.getElementById('memeImg');
+  function mostrarMeme() {
+    // Con la cancha llena no se invita a sumar: la imagen puede cargar despues
+    // de que se aplico el estado de cierre y volveria a mostrar el banner.
+    if (libres <= 0) return;
+    var lider = conHinchas[0];
+    document.getElementById('memeBanner').style.display = 'flex';
+    if (lider) {
+      document.getElementById('memeT1').textContent = '¿Vas a dejar que te pasen?';
+      document.getElementById('memeT2').textContent =
+        (lider.apodo || lider.name) + ' va primero con ' + hinchas(lider.count) + '. ' +
+        'Quedan ' + nf(libres) + ' lugares: cada uno que no llena tu club, se lo queda otro.';
+    } else {
+      document.getElementById('memeT1').textContent = 'La cancha está vacía';
+      document.getElementById('memeT2').textContent =
+        'Las ' + nf(CAPACITY) + ' hinchas están libres. El primero que entre, manda.';
+    }
+  };
+  function ocultarMeme() { document.getElementById('memeBanner').style.display = 'none'; }
+  // Si la imagen ya venia cacheada, el evento load ya paso y nunca se dispara:
+  // por eso se chequea complete/naturalWidth antes de quedarse esperando.
+  if (memeImg.complete) {
+    memeImg.naturalWidth > 0 ? mostrarMeme() : ocultarMeme();
+  } else {
+    memeImg.onload = mostrarMeme;
+    memeImg.onerror = ocultarMeme;
+  }
+
+  // ----- ranking lateral: todos los clubes que ya tienen hinchas -----
+  var rankList = document.getElementById('rankList');
+  if (!conHinchas.length) {
+    rankList.innerHTML = '<div class="empty-note">Todavía no entró nadie a la cancha.</div>';
+  }
+  conHinchas.forEach(function(c) {
+    var d = document.createElement('div');
+    d.className = 'rank-row' + (c.rank <= 3 ? ' podio' : '');
+    d.innerHTML =
+      '<div class="rank-pos pix">' + c.rank + 'º</div>' +
+      '<div class="sw" style="background:' + colorLegible(c) + '"></div>' +
+      '<div class="rank-nm">' + esc(c.apodo || c.name) + '</div>' +
+      '<div class="rank-pct pix" style="color:' + colorLegible(c) + '">' + (c.value > 0 ? pf(c.value) : '&lt;0,01%') + '</div>';
+    d.addEventListener('click', function() { verClub(c); });
+    rankList.appendChild(d);
+  });
+
+  // ----- estadio -----
+  var canvas = document.getElementById('estadioCanvas');
+  var nota = document.getElementById('stageNote');
+  var view;
+
+  function conectar() {
+    canvas.addEventListener('click', function(ev) {
+      var r = canvas.getBoundingClientRect(), k = view.width / r.width;
+      var c = view.clubAt((ev.clientX - r.left) * k, (ev.clientY - r.top) * k);
+      if (c) verClub(c);
+    });
+    canvas.addEventListener('mousemove', function(ev) {
+      var r = canvas.getBoundingClientRect(), k = view.width / r.width;
+      var c = view.clubAt((ev.clientX - r.left) * k, (ev.clientY - r.top) * k);
+      canvas.title = c ? c.name + (c.apodo ? ' — ' + c.apodo : '') + '\n' + hinchas(c.count) : '';
+    });
+  }
+
+  view = Estadio.render(canvas, { clubs: ranked, capacity: CAPACITY });
+  nota.textContent = 'vista general de la cancha · los colores se actualizan en vivo';
+  conectar();
+
+  // ----- ficha de club -----
+  function verClub(c) {
+    var el = document.getElementById('clubDetail');
+    var arriba = ranked.filter(function(o) { return o.count > c.count; }).pop();
+    var brecha;
+    if (arriba) {
+      brecha = esc(c.name) + ' necesita <b>' + hinchas(arriba.count - c.count + 1) + '</b> para pasar a ' + esc(arriba.name);
+    } else if (c.count > 0) {
+      brecha = 'Es la hinchada que más cancha llena. Defendela.';
+    } else {
+      brecha = 'Todavía no metió ni un hincha. <b>Poné el primero.</b>';
+    }
+    el.innerHTML =
+      '<img class="club-crest" src="escudos/' + c.file + '" alt="">' +
+      '<div class="club-name pix">' + esc(c.name) + '</div>' +
+      '<div class="club-apodo">' + esc(c.apodo || '') + '</div>' +
+      '<div class="club-stat"><span>Puesto</span><span>' + (c.count > 0 ? c.rank + 'º' : '—') + '</span></div>' +
+      '<div class="club-stat"><span>De la cancha</span><span>' + pf(c.value) + '</span></div>' +
+      '<div class="club-stat"><span>Hinchas</span><span>' + nf(c.count) + '</span></div>' +
+      '<div class="gap-note">' + brecha + '</div>' +
+      '<a class="cta-btn pix" href="comprar.html?club=' + encodeURIComponent(c.file) + '">Sumarme a ' + esc(c.name) + '</a>' +
+      '<a class="card-link" href="#" id="cerrarClub">« Volver al ranking</a>';
+    document.getElementById('cardComo').style.display = 'none';
+    document.getElementById('cardRef').style.display = 'none';
+    document.getElementById('cardClub').style.display = 'block';
+    document.getElementById('cerrarClub').addEventListener('click', function(e) {
+      e.preventDefault();
+      document.getElementById('cardClub').style.display = 'none';
+      document.getElementById('cardComo').style.display = 'block';
+      document.getElementById('cardRef').style.display = 'block';
+    });
+  }
+
+  // ----- llegada desde el pago: cartel de "listo" y ficha del club -----
+  // Se muestra solo si la orden esta pagada de verdad: el cartel no sale de la URL.
+  var listo = new URLSearchParams(location.search).get('listo');
+  if (listo) {
+    fetch('/api/orden?id=' + encodeURIComponent(listo)).then(function(r) { return r.json(); }).then(function(o) {
+      if (!o.ok || o.estado !== 'pagada') return;
+      var n = o.asignadas != null ? o.asignadas : o.cantidad;
+      var b = document.getElementById('listoBanner');
+      b.innerHTML = '<span class="t">✔</span><span></span>';
+      b.lastChild.textContent = (n === 1 ? '¡Listo! Tu hincha ya está en la cancha' : '¡Listo! Tus ' + nf(n) + ' hinchas ya están en la cancha') +
+        (o.club ? ' para ' + o.club : '');
+      b.style.display = 'flex';
+      var c = ranked.filter(function(x) { return x.file === o.archivo_escudo; })[0];
+      if (c) verClub(c);
+    }).catch(function() {});
+  }
+
+  // ----- llegada con el link de un club (/c/talleres): cartel con su puesto -----
+  var deClub = new URLSearchParams(location.search).get('club');
+  var cc = deClub && !listo ? ranked.filter(function(x) { return x.file === deClub; })[0] : null;
+  if (cc) {
+    var arribaDe = ranked.filter(function(o) { return o.count > cc.count; }).pop();
+    var situacion;
+    if (!cc.count) situacion = 'Todavía no metieron ni un hincha. <b>¡Poné el primero!</b>';
+    else if (!arribaDe) situacion = 'Van <b>primeros</b> con ' + hinchas(cc.count) + '. Que no los pasen.';
+    else situacion = 'Van <b>' + cc.rank + 'º</b> con ' + hinchas(cc.count) + '. A <b>' + hinchas(arribaDe.count - cc.count + 1) +
+                     '</b> de pasar a ' + esc(arribaDe.name) + '.';
+    var bc = document.getElementById('listoBanner');
+    bc.className = 'listo-banner club pix';
+    bc.innerHTML =
+      '<img src="escudos/' + encodeURIComponent(cc.file) + '" alt="">' +
+      '<div class="txt">Hinchas de ' + esc(cc.name) + ': ' + situacion + '</div>' +
+      '<a class="cta-btn red pix" href="comprar.html?club=' + encodeURIComponent(cc.file) + '">Sumar a ' + esc(cc.name) + '</a>';
+    bc.style.display = 'flex';
+    verClub(cc);
+    // El boton fijo del celular tambien apunta a ese club.
+    var fija = document.querySelector('.cta-fija');
+    if (fija) { fija.href = 'comprar.html?club=' + encodeURIComponent(cc.file); fija.textContent = '¡Meto hinchas para ' + cc.name + '!'; }
+  }
+
+  // ----- feed -----
+  var fl = document.getElementById('feedList');
+  if (!feed.length) {
+    fl.innerHTML = '<div class="empty-note">Acá van a aparecer las últimas compras.</div>';
+  } else {
+    feed.slice(0, 8).forEach(function(f) {
+      var row = document.createElement('div');
+      row.className = 'feed-row';
+      row.innerHTML =
+        '<div class="feed-av"><img src="escudos/' + f.archivo_escudo + '" alt=""></div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div class="feed-t"></div>' +
+          (f.mensaje ? '<div class="feed-m">"' + esc(f.mensaje) + '"</div>' : '') +
+        '</div>' +
+        '<div class="feed-time">' + timeAgo(f.fecha) + '</div>';
+      row.querySelector('.feed-t').textContent = f.nombre + ' → x' + f.cantidad + ' ' + f.club;
+      fl.appendChild(row);
+    });
+  }
+}).catch(function(err) {
+  // Error recuperable: se conserva la estructura de la pagina y se ofrece
+  // reintentar, en vez de dejar la cancha vacia sin explicacion.
+  console.error('no se pudieron cargar los datos:', err);
+  document.querySelector('.grid').insertAdjacentHTML('beforebegin',
+    '<div class="card error-datos"><div class="card-head pix">No pudimos actualizar la cancha</div>' +
+    '<div class="card-body">' +
+    '<p>Puede ser tu conexión o algo de nuestro lado. Los datos que ves pueden estar viejos.</p>' +
+    '<button type="button" class="cta-btn pix" id="reintentar">Reintentar</button>' +
+    '</div></div>');
+  document.getElementById('reintentar').addEventListener('click', function() {
+    this.textContent = 'Reintentando...';
+    this.disabled = true;
+    location.reload();
+  });
+});
+</script>
+</body>
+</html>

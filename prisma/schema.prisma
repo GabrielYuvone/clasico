@@ -1,0 +1,38 @@
+// La Tribuna — estadio virtual de 100.000 ubicaciones.
+// Cada compra (Purchase) es un visitante que sumó N hinchas para un club.
+// El color con el que se pintan las butacas sale del Club; el total painted
+// por club es la suma de sus purchases. No hay usuarios ni pagos: en
+// modo prueba cualquier visitante puede agregar hinchas libremente.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Club {
+  id            String   @id @default(cuid())
+  slug          String   @unique // estable: "boca", "river", ...
+  nombre        String
+  apodo         String
+  liga          String
+  ciudad        String
+  provincia     String
+  colorPrimario String
+  colorSecundario String
+  createdAt     DateTime @default(now())
+  purchases     Purchase[]
+}
+
+model Purchase {
+  id        String   @id @default(cuid())
+  clubId    String
+  club      Club     @relation(fields: [clubId], references: [id])
+  cantidad  Int
+  nombre    String?
+  mensaje   String?
+  createdAt DateTime @default(now())
+}
