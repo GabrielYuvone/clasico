@@ -67,19 +67,17 @@ export async function POST(req: Request) {
   const totalAmount = PRECIO * cantidad
   const description = `${cantidad} hincha${cantidad === 1 ? '' : 's'} para ${club.nombre} · La Tribuna`
 
-  // URL del webhook: si MP_WEBHOOK_URL está seteado lo usamos; si no, usamos
-  // el host del request. En preview, el host del request es el correcto.
-  const url = new URL(req.url)
-  const webhookUrl = process.env.MP_WEBHOOK_URL
-    || `${url.protocol}//${url.host}/api/mp/webhook`
+  // URL del webhook. MP RECHAZA localhost, así que usamos MP_BASE_URL si está
+  // definida (la URL pública de la app). Si no, caemos al host del request.
+  const baseUrl = (process.env.MP_BASE_URL || new URL(req.url).origin).replace(/\/$/, '')
+  const webhookUrl = `${baseUrl}/api/mp/webhook`
 
   // URLs de retorno. Para que auto_return funcione, success tiene que ser
   // distinto de pending/failure. Les ponemos querystrings distintos para
   // que el front sepa de dónde viene el usuario (pago ok, pendiente, fallado).
-  const backUrl = `${url.protocol}//${url.host}/`
-  const successUrl = `${backUrl}?mp=success&ref=${purchase.id}`
-  const pendingUrl = `${backUrl}?mp=pending&ref=${purchase.id}`
-  const failureUrl = `${backUrl}?mp=failure&ref=${purchase.id}`
+  const successUrl = `${baseUrl}/?mp=success&ref=${purchase.id}`
+  const pendingUrl = `${baseUrl}/?mp=pending&ref=${purchase.id}`
+  const failureUrl = `${baseUrl}/?mp=failure&ref=${purchase.id}`
 
   const mpRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
     method: 'POST',
@@ -102,10 +100,11 @@ export async function POST(req: Request) {
       external_reference: purchase.id,
       notification_url: webhookUrl,
       back_urls: {
-        success: backUrl,
-        pending: backUrl,
-        failure: backUrl,
+        success: successUrl,
+        pending: pendingUrl,
+        failure: failureUrl,
       },
+      auto_return: 'approved',
       statement_descriptor: 'LA TRIBUNA',
       // En sandbox forzamos que TODOS los pagos sean de prueba.
       // (El sandbox ya lo hace solo, pero por las dudas.)
