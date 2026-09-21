@@ -3,9 +3,11 @@ import { db } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
-// GET /api/feed — últimas compras (hasta 30), para el feed de actividad.
+// GET /api/feed — últimas compras pagadas (hasta 30), para el feed de actividad.
+// Las pendientes no se muestran: todavía no son hinchas en la cancha.
 export async function GET() {
   const purchases = await db.purchase.findMany({
+    where: { estado: 'pagada' },
     take: 30,
     orderBy: { createdAt: 'desc' },
     include: { club: true },
@@ -20,7 +22,8 @@ export async function GET() {
     slug: p.club.slug,
     color: p.club.colorPrimario,
     color2: p.club.colorSecundario,
-    fecha: p.createdAt.toISOString(),
+    amigo: p.amigo,
+    fecha: (p.approvedAt || p.createdAt).toISOString(),
   }))
 
   return NextResponse.json(out)

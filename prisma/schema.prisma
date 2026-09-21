@@ -1,8 +1,16 @@
 // La Tribuna — estadio virtual de 100.000 ubicaciones.
 // Cada compra (Purchase) es un visitante que sumó N hinchas para un club.
-// El color con el que se pintan las butacas sale del Club; el total painted
-// por club es la suma de sus purchases. No hay usuarios ni pagos: en
-// modo prueba cualquier visitante puede agregar hinchas libremente.
+//
+// Estado del pago:
+//   - "pendiente": el visitante generó la orden pero todavía no la verificamos
+//     contra la cuenta de Mercado Pago del admin. Los hinchas NO pintan todavía.
+//   - "pagada": el admin aprobó la operación (o era compra de "amigo", que
+//     arranca pagada directamente). Los hinchas sí pintan.
+//   - "rechazada": el admin la descartó.
+//
+// `operacion` guarda el número de operación que Mercado Pago le muestra al
+// comprador, para poder cruzarlo contra el movimientos del admin.
+// `amigo` marca las compras que no requieren pago (botón "soy amigo").
 
 generator client {
   provider = "prisma-client-js"
@@ -28,11 +36,15 @@ model Club {
 }
 
 model Purchase {
-  id        String   @id @default(cuid())
-  clubId    String
-  club      Club     @relation(fields: [clubId], references: [id])
-  cantidad  Int
-  nombre    String?
-  mensaje   String?
-  createdAt DateTime @default(now())
+  id         String    @id @default(cuid())
+  clubId     String
+  club       Club      @relation(fields: [clubId], references: [id])
+  cantidad   Int
+  nombre     String?
+  mensaje    String?
+  estado     String    @default("pendiente") // "pendiente" | "pagada" | "rechazada"
+  operacion  String?   // número de operación MP que ve el comprador
+  amigo      Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  approvedAt DateTime?
 }

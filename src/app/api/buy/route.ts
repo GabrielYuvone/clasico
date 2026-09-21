@@ -6,12 +6,15 @@ export const dynamic = 'force-dynamic'
 const CAPACIDAD = 100000
 const MAX_POR_COMPRA = 2000
 
-// POST /api/buy — sumar hinchas a un club. Sin registro.
-// Body: { slug, cantidad, nombre?, mensaje?, amigo?: boolean }
-//   - amigo=true  → compra gratuita (modo "soy amigo" / prueba)
-//   - amigo=false → compra paga (el front ya abrió Mercado Pago con el alias)
-// En ambos casos registrábamos la compra. El pago real lo hace el visitante
-// en Mercado Pago; el backend solo asienta la compra cuando el front lo pida.
+// POST /api/buy — crear una compra.
+// Body: { slug, cantidad, nombre?, mensaje?, amigo?, operacion? }
+//
+//   amigo=true   → sin pago. La compra arranca en estado "pagada". Los hinchas
+//                  se pintan en la cancha en cuanto el front refresca.
+//   amigo=false  → con pago. La compra arranca en estado "pendiente". Los
+//                  hinchas NO pintan todavía. El admin debe verificar el pago
+//                  en su cuenta de Mercado Pago contra `operacion` y aprobarla
+//                  (ver scripts/approve.ts). Recién ahí pasa a "pagada".
 export async function POST(req: Request) {
   let body: any
   try {
@@ -25,6 +28,7 @@ export async function POST(req: Request) {
   const nombre = body.nombre ? String(body.nombre).trim().slice(0, 40) : null
   const mensaje = body.mensaje ? String(body.mensaje).trim().slice(0, 140) : null
   const amigo = Boolean(body.amigo)
+  const operacion = body.operacion ? String(body.operacion).trim().slice(0, 50) : null
 
   if (!slug) return NextResponse.json({ ok: false, error: 'Falta el club' }, { status: 400 })
   if (!cantidad || cantidad < 1)
@@ -35,11 +39,23 @@ export async function POST(req: Request) {
       { status: 400 }
     )
 
+  // Si NO es amigo, exigimos el número de operación que MP le dio al comprador.
+  // Sin ese código no se puede verificar nada.
+  if (!amigo && !operacion) {
+    return NextResponse.json(
+      { ok: false, error: 'Falta el número de operación de Mercado Pago' },
+      { status: 400 }
+    )
+  }
+
   const club = await db.club.findUnique({ where: { slug } })
   if (!club) return NextResponse.json({ ok: false, error: 'Club inexistente' }, { status: 404 })
 
-  // Control de aforo: no se puede vender más de la capacidad.
-  const total = await db.purchase.aggregate({ _sum: { cantidad: true } })
+  // Control de aforo: contar SOLO las pagadas.
+  const total = await db.purchase.aggregate({
+    _sum: { cantidad: true },
+    where: { estado: 'pagada' },
+  })
   const ocupadas = total._sum.cantidad ?? 0
   const libres = Math.max(0, CAPACIDAD - ocupadas)
   if (cantidad > libres) {
@@ -49,8 +65,18 @@ export async function POST(req: Request) {
     )
   }
 
+  const now = new Date()
   const purchase = await db.purchase.create({
-    data: { clubId: club.id, cantidad, nombre, mensaje },
+    data: {
+      clubId: club.id,
+      cantidad,
+      nombre,
+      mensaje,
+      estado: amigo ? 'pagada' : 'pendiente',
+      operacion: amigo ? null : operacion,
+      amigo,
+      approvedAt: amigo ? now : null,
+    },
     include: { club: true },
   })
 
@@ -64,7 +90,9 @@ export async function POST(req: Request) {
     color2: purchase.club.colorSecundario,
     nombre: purchase.nombre,
     mensaje: purchase.mensaje,
+    estado: purchase.estado,
+    operacion: purchase.operacion,
+    amigo: purchase.amigo,
     fecha: purchase.createdAt.toISOString(),
-    amigo, // para que el front sepa cómo llegó
   })
 }

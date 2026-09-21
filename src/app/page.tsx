@@ -39,6 +39,7 @@ type Config = {
   libres: number
   cobraDeVerdad: boolean
   permiteAmigo: boolean
+  pendientes: number
 }
 
 // Ranking: por hinchas desc, desempate por nombre asc.
@@ -498,8 +499,15 @@ export default function Home() {
         {/* ---------- Footer ---------- */}
         <footer className="mt-3.5 bg-black text-gray-300 border-4 border-black flex justify-between items-center flex-wrap gap-2.5 px-3.5 py-2 text-[10px] uppercase">
           <span>La Tribuna · estadio virtual · {config?.aliasMP ? `pagá a ${config.aliasMP} o «soy amigo»` : 'modo prueba'}</span>
-          <span className="border-2 border-yellow-300 text-yellow-300 px-2 py-1">
-            {nf(ocupadas)} / {nf(capacidad)} · {pf(pct)} llena
+          <span className="flex items-center gap-2 flex-wrap">
+            {config && config.pendientes > 0 && (
+              <span className="border-2 border-orange-400 text-orange-400 px-2 py-1">
+                {config.pendientes} pendiente{config.pendientes === 1 ? '' : 's'} · admin: <code className="text-yellow-300">bun run scripts/approve.ts &lt;op&gt;</code>
+              </span>
+            )}
+            <span className="border-2 border-yellow-300 text-yellow-300 px-2 py-1">
+              {nf(ocupadas)} / {nf(capacidad)} · {pf(pct)} llena
+            </span>
           </span>
         </footer>
       </div>

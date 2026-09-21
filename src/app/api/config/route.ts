@@ -4,14 +4,17 @@ import { db } from '@/lib/db'
 export const dynamic = 'force-dynamic'
 
 // GET /api/config — configuración del estadio.
-// precio: precio por hincha (ARS). 0 = gratis.
-// aliasMP: alias de Mercado Pago para recibir pagos.
-//   El botón "pagar" abre https://mpago.la/<alias>?amount=<precio*qty> en una
-//   nueva pestaña. El visitante paga, vuelve y confirma; el botón "soy amigo"
-//   salta el pago (modo prueba / amigos / preview).
+//   precio: precio por hincha (ARS).
+//   aliasMP: alias de Mercado Pago para recibir pagos.
+//   permiteAmigo: si true, el botón "soy amigo" aparece y mete hinchas sin pago.
+//   pendientes: cuántas compras están esperando verificación del admin.
+//   ocupadas/libres: solo cuentan las pagadas.
 export async function GET() {
-  const total = await db.purchase.aggregate({ _sum: { cantidad: true } })
-  const ocupadas = total._sum.cantidad ?? 0
+  const [pagadasAgg, pendientesCount] = await Promise.all([
+    db.purchase.aggregate({ _sum: { cantidad: true }, where: { estado: 'pagada' } }),
+    db.purchase.count({ where: { estado: 'pendiente' } }),
+  ])
+  const ocupadas = pagadasAgg._sum.cantidad ?? 0
   const capacidad = 100000
   const libres = Math.max(0, capacidad - ocupadas)
 
@@ -22,7 +25,8 @@ export async function GET() {
     maxPorCompra: 2000,
     ocupadas,
     libres,
-    cobraDeVerdad: true, // hay un botón de pago real
-    permiteAmigo: true,  // pero también existe el botón "soy amigo"
+    cobraDeVerdad: true,
+    permiteAmigo: true,
+    pendientes: pendientesCount,
   })
 }

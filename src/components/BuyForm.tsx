@@ -41,6 +41,7 @@ export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libr
   const [custom, setCustom] = useState<string>('')
   const [nombre, setNombre] = useState<string>('')
   const [mensaje, setMensaje] = useState<string>('')
+  const [operacion, setOperacion] = useState<string>('')
   const [submitting, setSubmitting] = useState<boolean>(false)
 
   useEffect(() => {
@@ -50,6 +51,7 @@ export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libr
       setCustom('')
       setNombre('')
       setMensaje('')
+      setOperacion('')
     }
   }, [open, preselectSlug])
 
@@ -67,7 +69,7 @@ export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libr
     ? `https://mpago.la/${alias}${total > 0 ? `?amount=${total}` : ''}`
     : ''
 
-  async function postBuy(amigo: boolean) {
+  async function postBuy(amigo: boolean, op?: string) {
     if (!slug) {
       toast.error('Elegí un club primero.')
       return null
@@ -80,12 +82,16 @@ export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libr
       toast.error(`Solo quedan ${nf(libres)} lugares.`)
       return null
     }
+    if (!amigo && !op) {
+      toast.error('Pegá el número de operación que te dio Mercado Pago.')
+      return null
+    }
     setSubmitting(true)
     try {
       const res = await fetch('/api/buy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug, cantidad: qty, nombre: nombre || undefined, mensaje: mensaje || undefined, amigo }),
+        body: JSON.stringify({ slug, cantidad: qty, nombre: nombre || undefined, mensaje: mensaje || undefined, amigo, operacion: op }),
       })
       const data = await res.json()
       if (!data.ok) {
@@ -101,7 +107,7 @@ export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libr
     }
   }
 
-  async function pagarConMP() {
+  function abrirMP() {
     if (!mpLink) {
       toast.error('No hay alias de Mercado Pago configurado.')
       return
@@ -109,22 +115,22 @@ export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libr
     if (!slug) { toast.error('Elegí un club primero.'); return }
     if (qty > libres) { toast.error(`Solo quedan ${nf(libres)} lugares.`); return }
     if (qty < 1) { toast.error('Poné una cantidad válida.'); return }
-
-    // Abrimos Mercado Pago en otra pestaña y avisamos al usuario que
-    // después de pagar vuelva y confirme.
     window.open(mpLink, '_blank', 'noopener,noreferrer')
     toast(
-      `Se abrió Mercado Pago. Pagá $${nf(total)} a "${alias}" y después tocá "Ya pagué".`,
-      { duration: 7000 }
+      `Se abrió Mercado Pago. Pagá $${nf(total)} a "${alias}", anotá el número de operación que te da MP y volvé a pegarlo acá.`,
+      { duration: 9000 }
     )
-    // NO registramos la compra todavía: esperamos la confirmación del
-    // usuario (podría no haber pagado). El botón "Ya pagué" la dispara.
   }
 
-  async function confirmarPago() {
-    const data = await postBuy(false)
+  async function enviarComprobante() {
+    const op = operacion.trim()
+    if (!op) {
+      toast.error('Pegá el número de operación que te dio Mercado Pago.')
+      return
+    }
+    const data = await postBuy(false, op)
     if (data) {
-      toast.success(`¡Listo! ${nf(qty)} ${qty === 1 ? 'hincha' : 'hinchas'} para ${data.club}.`)
+      toast.success(`¡Anotado! Tu compra está pendiente de verificación. En cuanto el admin confirme el pago a ${alias}, los hinchas van a aparecer.`)
       onBought()
       onOpenChange(false)
     }
@@ -147,7 +153,7 @@ export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libr
             Metelos a la cancha
           </DialogTitle>
           <DialogDescription className="font-mono text-xs uppercase">
-            Sumá hinchas para tu club y pintá la tribuna. Pagá con Mercado Pago o, si sos amigo, saltate el pago.
+            Sumá hinchas para tu club. Pagá con Mercado Pago (queda pendiente hasta que el admin verifique) o, si sos amigo, saltate el pago.
           </DialogDescription>
         </DialogHeader>
 
@@ -260,29 +266,49 @@ export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libr
             <span className="font-mono font-bold text-2xl text-red-700">${nf(total)}</span>
           </div>
 
-          {/* Botón PAGAR con Mercado Pago */}
+          {/* Flujo MERCADO PAGO (3 pasos) */}
           {alias && (
             <div className="space-y-2">
+              {/* Paso 1: abrir MP */}
               <Button
-                onClick={pagarConMP}
+                onClick={abrirMP}
                 disabled={submitting || !slug}
                 className="w-full border-4 border-black bg-[#00b1ea] hover:bg-[#0096c7] text-white font-mono font-bold uppercase tracking-wide rounded-none shadow-[4px_4px_0_rgba(0,0,0,0.55)] disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Pagar ${nf(total)} con Mercado Pago
+                1 · Pagar ${nf(total)} en Mercado Pago
               </Button>
               <div className="text-[10px] text-center text-gray-600 uppercase">
-                alias: <b>{alias}</b> · te abre Mercado Pago en otra pestaña
+                alias: <b>{alias}</b> · se abre en otra pestaña
               </div>
-              {/* Confirmación post-pago */}
+
+              {/* Paso 2: pegar el número de operación */}
+              <div>
+                <Label className="text-[10px] uppercase text-gray-700 block mb-1">
+                  2 · Pegá el número de operación que te dio MP
+                </Label>
+                <Input
+                  value={operacion}
+                  onChange={(e) => setOperacion(e.target.value)}
+                  maxLength={50}
+                  placeholder="Ej: 1234567890"
+                  className="border-4 border-black rounded-none font-mono font-bold"
+                />
+                <div className="text-[9.5px] text-gray-500 mt-0.5">
+                  Lo vas a ver en la pantalla de confirmación de MP y en el mail.
+                  Con ese código el admin cruza el pago.
+                </div>
+              </div>
+
+              {/* Paso 3: enviar comprobante — queda pendiente hasta verificación */}
               <Button
-                onClick={confirmarPago}
-                disabled={submitting || !slug}
+                onClick={enviarComprobante}
+                disabled={submitting || !slug || !operacion.trim()}
                 className="w-full border-4 border-black bg-green-700 hover:bg-green-800 text-white font-mono font-bold uppercase tracking-wide rounded-none shadow-[4px_4px_0_rgba(0,0,0,0.55)] disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {submitting ? 'Sumando…' : 'Ya pagué · meter hinchas'}
+                {submitting ? 'Enviando…' : '3 · Enviar comprobante'}
               </Button>
-              <div className="text-[10px] text-center text-gray-600">
-                Después de pagar en Mercado Pago, volvé y tocá acá para meter los hinchas.
+              <div className="text-[10px] text-center text-gray-700 bg-[#fff6c9] border-2 border-black p-1.5">
+                Tu compra queda <b>pendiente</b>. Los hinchas pintan en la cancha recién cuando el admin confirme el pago.
               </div>
             </div>
           )}
@@ -294,7 +320,7 @@ export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libr
             <div className="flex-1 h-[3px] bg-black" />
           </div>
 
-          {/* Botón SOY AMIGO (no paga) */}
+          {/* Botón SOY AMIGO (no paga, directo a pagada) */}
           <Button
             onClick={soyAmigo}
             disabled={submitting || !slug}
