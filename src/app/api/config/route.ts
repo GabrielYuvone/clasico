@@ -5,10 +5,11 @@ export const dynamic = 'force-dynamic'
 
 // GET /api/config — configuración del estadio.
 //   precio: precio por hincha (ARS).
-//   aliasMP: alias de Mercado Pago para recibir pagos.
+//   aliasMP: alias de Mercado Pago (legacy, ya no se usa en el flujo automático).
 //   permiteAmigo: si true, el botón "soy amigo" aparece y mete hinchas sin pago.
-//   pendientes: cuántas compras están esperando verificación del admin.
+//   pendientes: cuántas compras están esperando webhook de MP (modo dev / debug).
 //   ocupadas/libres: solo cuentan las pagadas.
+//   mpReady: si MP_ACCESS_TOKEN está configurado (flujo automático disponible).
 export async function GET() {
   const [pagadasAgg, pendientesCount] = await Promise.all([
     db.purchase.aggregate({ _sum: { cantidad: true }, where: { estado: 'pagada' } }),
@@ -28,5 +29,6 @@ export async function GET() {
     cobraDeVerdad: true,
     permiteAmigo: true,
     pendientes: pendientesCount,
+    mpReady: Boolean(process.env.MP_ACCESS_TOKEN),
   })
 }

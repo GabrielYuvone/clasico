@@ -40,6 +40,7 @@ type Config = {
   cobraDeVerdad: boolean
   permiteAmigo: boolean
   pendientes: number
+  mpReady?: boolean
 }
 
 // Ranking: por hinchas desc, desempate por nombre asc.
@@ -502,7 +503,7 @@ export default function Home() {
           <span className="flex items-center gap-2 flex-wrap">
             {config && config.pendientes > 0 && (
               <span className="border-2 border-orange-400 text-orange-400 px-2 py-1">
-                {config.pendientes} pendiente{config.pendientes === 1 ? '' : 's'} · admin: <code className="text-yellow-300">bun run scripts/approve.ts &lt;op&gt;</code>
+                {config.pendientes} pendiente{config.pendientes === 1 ? '' : 's'} · esperando webhook de MP
               </span>
             )}
             <span className="border-2 border-yellow-300 text-yellow-300 px-2 py-1">
