@@ -22,6 +22,16 @@ export const fetchCache = 'force-no-store'
 export async function POST(req: Request) {
   const verify = String(process.env.MP_WEBHOOK_VERIFY ?? 'true') !== 'false'
 
+  // Log de diagnóstico: registramos todos los headers y el body crudo para
+  // poder depurar si MP manda algo distinto a lo esperado.
+  const headers: Record<string, string> = {}
+  req.headers.forEach((value, key) => {
+    if (key.toLowerCase().startsWith('x-') || key.toLowerCase() === 'content-type') {
+      headers[key] = value
+    }
+  })
+  console.log('[mp/webhook] request incoming', { headers, verify })
+
   let body: any
   try {
     body = await req.json()
