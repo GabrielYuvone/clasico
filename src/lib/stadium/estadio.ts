@@ -439,7 +439,20 @@ export function renderEstadio(canvas: HTMLCanvasElement, opts: { clubs: ClubView
     } else {
       const club = owners[it.i]
       if (club) {
-        top = isHex(club.color) ? club.color : '#8a8a8a'
+        // Patrón DAMERO: si el club tiene color2, alternamos entre el primario
+        // y el secundario en patrón de tablero de ajedrez (damero). El patrón
+        // es (row + col) % 2 == 0 → primario, == 1 → secundario. Así cada
+        // butaca está rodeada de butacas del otro color, como un tablero.
+        // Esto da el efecto "medio y medio" clásico de las tribunas argentinas:
+        // La Lepra rojo/negro, El Canalla azul/amarillo.
+        const primario = isHex(club.color) ? club.color : '#8a8a8a'
+        const secundario = isHex(club.color2) ? club.color2! : null
+        if (secundario) {
+          // Damero: alternar primario/secundario por (row + col) par/impar.
+          top = (s.row + s.col) % 2 === 0 ? primario : secundario
+        } else {
+          top = primario
+        }
         side = shade(top, 0.62)
       } else {
         top = (s.row % 2) ? C_EMPTY : C_EMPTY_B

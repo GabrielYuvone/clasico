@@ -25,7 +25,7 @@ async function main() {
     data: {
       slug: 'canalla',
       nombre: 'Rosario Central',
-      apodo: 'Canalla',
+      apodo: 'El Canalla',
       liga: 'Clásico Rosarino',
       ciudad: 'Rosario',
       provincia: 'Santa Fe',

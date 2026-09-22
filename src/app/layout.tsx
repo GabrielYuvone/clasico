@@ -14,10 +14,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "La Tribuna del Clásico — La Lepra vs. Canalla",
+  title: "La Tribuna del Clásico — La Lepra vs. El Canalla",
   description:
-    "Un estadio virtual de 100.000 ubicaciones dividido en dos mitades: La Lepra (Newell's) a la izquierda, Canalla (Rosario Central) a la derecha. Sumá hinchas y pintá tu lado.",
-  keywords: ["clásico rosarino", "Newell's", "Rosario Central", "La Lepra", "Canalla", "fútbol", "estadio virtual"],
+    "Un estadio virtual de 100.000 ubicaciones dividido en dos mitades: La Lepra (Newell's) a la izquierda, El Canalla (Rosario Central) a la derecha. Sumá hinchas y pintá tu lado.",
+  keywords: ["clásico rosarino", "Newell's", "Rosario Central", "La Lepra", "El Canalla", "fútbol", "estadio virtual"],
   authors: [{ name: "La Tribuna del Clásico" }],
 };
 

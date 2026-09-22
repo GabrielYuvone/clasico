@@ -120,7 +120,7 @@ export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libr
 
   const isLepra = slug === 'lepra'
   const clubColor = isLepra ? '#C8102E' : '#0033A0'
-  const clubApodo = isLepra ? 'La Lepra' : 'Canalla'
+  const clubApodo = isLepra ? 'La Lepra' : 'El Canalla'
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -163,7 +163,7 @@ export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libr
                 style={{ background: 'linear-gradient(135deg, #0033A0 0%, #001a50 100%)' }}
               >
                 <div className="text-[10px] uppercase tracking-widest text-white/70">Sumar a</div>
-                <div className="text-lg">Canalla</div>
+                <div className="text-lg">El Canalla</div>
               </button>
             </div>
           </div>

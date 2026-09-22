@@ -194,7 +194,7 @@ export default function Home() {
                   className="text-base sm:text-4xl font-black uppercase tracking-tight leading-none"
                   style={{ fontWeight: 900 }}
                 >
-                  CANALLA
+                  EL CANALLA
                 </div>
                 <div className="text-[9px] sm:text-xs uppercase tracking-widest text-white/70 mt-1 hidden sm:block">
                   Rosario Central
@@ -224,10 +224,10 @@ export default function Home() {
               {total === 0
                 ? 'La cancha está vacía — el primero en entrar manda'
                 : lider
-                ? `Gana ${lider === 'lepra' ? 'La Lepra' : 'Canalla'} por ${nf(ventaja)} hinchas`
+                ? `Gana ${lider === 'lepra' ? 'La Lepra' : 'El Canalla'} por ${nf(ventaja)} hinchas`
                 : 'Van empatados'}
             </span>
-            <span>{total > 0 ? pf(Math.round(pctCanalla * 100) / 100) : '50,00%'} Canalla</span>
+            <span>{total > 0 ? pf(Math.round(pctCanalla * 100) / 100) : '50,00%'} El Canalla</span>
           </div>
           <div className="h-6 rounded-full overflow-hidden flex border border-white/10">
             <div
@@ -294,7 +294,7 @@ export default function Home() {
                 Sumar hinchas para
               </div>
               <div className="text-xl sm:text-2xl font-black uppercase mt-0.5" style={{ fontWeight: 900 }}>
-                Canalla
+                El Canalla
               </div>
             </button>
           </div>
@@ -314,7 +314,7 @@ export default function Home() {
               {feed.slice(0, 8).map((f) => {
                 const isLepra = f.slug === 'lepra'
                 const color = isLepra ? '#C8102E' : '#0033A0'
-                const apodo = isLepra ? 'La Lepra' : 'Canalla'
+                const apodo = isLepra ? 'La Lepra' : 'El Canalla'
                 return (
                   <div
                     key={f.id}
@@ -352,20 +352,66 @@ export default function Home() {
         </section>
 
         {/* ---------- Footer ---------- */}
-        <footer className="mt-8 pt-4 border-t border-white/10 flex justify-between items-center flex-wrap gap-3 text-[10px] sm:text-xs uppercase tracking-widest text-white/40">
-          <span>
-            La Tribuna del Clásico · estadio virtual · pagá con MP o «soy amigo»
-          </span>
-          <span className="flex items-center gap-2 flex-wrap">
-            {config && config.pendientes > 0 && (
-              <span className="border border-yellow-500/50 text-yellow-400 px-2 py-0.5 rounded">
-                {config.pendientes} pendiente{config.pendientes === 1 ? '' : 's'}
-              </span>
-            )}
+        <footer className="mt-8 pt-6 border-t border-white/10 space-y-4">
+          {/* Stats y estado */}
+          <div className="flex justify-between items-center flex-wrap gap-3 text-[10px] sm:text-xs uppercase tracking-widest text-white/40">
             <span>
-              {nf(total)} / {nf(capacidad)} · {pf(Math.round(pctLlena * 100) / 100)}
+              La Tribuna del Clásico · estadio virtual · pagá con MP o «soy amigo»
             </span>
-          </span>
+            <span className="flex items-center gap-2 flex-wrap">
+              {config && config.pendientes > 0 && (
+                <span className="border border-yellow-500/50 text-yellow-400 px-2 py-0.5 rounded">
+                  {config.pendientes} pendiente{config.pendientes === 1 ? '' : 's'}
+                </span>
+              )}
+              <span>
+                {nf(total)} / {nf(capacidad)} · {pf(Math.round(pctLlena * 100) / 100)}
+              </span>
+            </span>
+          </div>
+
+          {/* Disclaimer de responsabilidad */}
+          <div className="text-[10px] sm:text-xs text-white/40 leading-relaxed bg-white/5 border border-white/10 rounded-lg p-3">
+            <p className="mb-1">
+              <b className="text-white/60">Aviso:</b> Este sitio es una iniciativa independiente, sin relación formal con
+              {' '}<b className="text-white/60">Newell&apos;s Old Boys</b> ni <b className="text-white/60">Rosario Central</b>,
+              {' '}ni con la venta oficial de entradas de los clubes. Los &quot;hinchas&quot; que se compran aquí son unidades
+              virtuales dentro de un estadio simulado: <b className="text-white/60">no representan butacas reales</b>, no dan
+              {' '}derecho a entrar a ningún estadio físico y no están asociados a ninguna entidad organizadora.
+            </p>
+            <p className="mb-1">
+              <b className="text-white/60">Pagos:</b> Los pagos se procesan a través de Mercado Pago a su alias registrado.
+              {' '}<b className="text-white/60">Las compras no tienen devolución</b>: al confirmar el pago, las unidades virtuales
+              {' '}se pintan en el estadio y no se pueden revertir. Si pagaste por error o creés que hubo un problema, contactate
+              {' '}con nosotros antes de iniciar un reclamo en Mercado Pago.
+            </p>
+            <p>
+              Al usar este sitio y/o realizar un pago, aceptás este aviso en su totalidad.
+            </p>
+          </div>
+
+          {/* Créditos a MOXEN (inspiración del sitio) */}
+          <div className="text-[10px] sm:text-xs text-white/40 leading-relaxed">
+            Inspirado en{' '}
+            <a
+              href="https://lapopular.online"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white/70 hover:text-white underline"
+            >
+              lapopular.online
+            </a>
+            , proyecto original de{' '}
+            <a
+              href="https://x.com/Moxen14"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white/70 hover:text-white underline"
+            >
+              MOXEN (@Moxen14 en X)
+            </a>
+            . Este es un homenaje al concepto, no una copia oficial ni está vinculado a su autor.
+          </div>
         </footer>
       </div>
 
