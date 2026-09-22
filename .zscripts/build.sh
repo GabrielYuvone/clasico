@@ -158,6 +158,58 @@ echo "  - 复制 start.sh 到 $BUILD_DIR"
 cp "$SCRIPT_DIR/start.sh" "$BUILD_DIR/start.sh"
 chmod +x "$BUILD_DIR/start.sh"
 
+# ─── Sanity check del build (auto-recovery) ───────────────────────────────
+# Si falta algo crítico en next-service-dist, el deploy falla en runtime
+# (FunctionNotStarted / warmup_412). Verificamos antes de salir y copiamos
+# lo que falte desde el proyecto.
+
+echo "🔍 Sanity check del build..."
+NEXT_SERVICE="$BUILD_DIR/next-service-dist"
+
+# 1. server.js (entrada del server Next.js standalone)
+if [ ! -f "$NEXT_SERVICE/server.js" ]; then
+    echo "  ❌ Falta next-service-dist/server.js — build incompleto"
+    exit 1
+fi
+echo "  ✓ server.js presente"
+
+# 2. .next/static (chunks JS/CSS del front; sin esto, la página carga en blanco)
+if [ ! -d "$NEXT_SERVICE/.next/static" ]; then
+    echo "  ⚠️  Falta next-service-dist/.next/static — copiando..."
+    mkdir -p "$NEXT_SERVICE/.next"
+    cp -r "$NEXTJS_PROJECT_DIR/.next/static" "$NEXT_SERVICE/.next/"
+fi
+echo "  ✓ .next/static presente"
+
+# 3. public/ (favicon, robots.txt, bg-clasico.png, etc)
+if [ ! -d "$NEXT_SERVICE/public" ]; then
+    echo "  ⚠️  Falta next-service-dist/public — copiando..."
+    cp -r "$NEXTJS_PROJECT_DIR/public" "$NEXT_SERVICE/"
+fi
+echo "  ✓ public/ presente"
+
+# 4. .env (credenciales MP + URL de Neon + webhook secret).
+#    CRÍTICO: sin esto el runtime cae al SQLite packaged y no tiene MP.
+#    Si el .env no se copió al standalone, lo copiamos a mano.
+if [ ! -f "$NEXT_SERVICE/.env" ]; then
+    if [ -f "$NEXTJS_PROJECT_DIR/.env" ]; then
+        echo "  ⚠️  Falta next-service-dist/.env — copiando..."
+        cp "$NEXTJS_PROJECT_DIR/.env" "$NEXT_SERVICE/.env"
+    else
+        echo "  ⚠️  No hay .env ni en next-service-dist ni en el proyecto. El runtime va a caer a SQLite packaged y sin MP."
+    fi
+fi
+echo "  ✓ .env presente"
+
+# 5. Verificar que el .env tiene DATABASE_URL apuntando a Neon (no al SQLite local)
+if grep -q "^DATABASE_URL=postgresql://" "$NEXT_SERVICE/.env" 2>/dev/null; then
+    echo "  ✓ DATABASE_URL apunta a Postgres (Neon)"
+elif grep -q "^DATABASE_URL=file:" "$NEXT_SERVICE/.env" 2>/dev/null; then
+    echo "  ⚠️  DATABASE_URL todavía apunta a SQLite local — el runtime va a caer al packaged. Editá .env con la URL de Neon."
+fi
+
+echo "✅ Sanity check OK"
+
 # 打包到 $BUILD_DIR.tar.gz
 PACKAGE_FILE="${BUILD_DIR}.tar.gz"
 echo ""
