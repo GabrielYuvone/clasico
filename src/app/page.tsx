@@ -149,18 +149,18 @@ export default function Home() {
       <div className="max-w-[1400px] mx-auto w-full flex-1 flex flex-col px-4 sm:px-6 py-4 sm:py-6">
         {/* ---------- Cabezal cruzado ---------- */}
         <header className="grid grid-cols-2 mb-6 rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
-          {/* Lado Lepra */}
+          {/* Lado Lepra — degradado de rojo a negro (izq a der) */}
           <button
             onClick={() => abrirModal('lepra')}
             className="relative p-3 sm:p-7 text-left transition-all hover:brightness-110 group"
-            style={{ background: 'linear-gradient(135deg, #C8102E 0%, #6a0a1a 100%)' }}
+            style={{ background: 'linear-gradient(90deg, #C8102E 0%, #111111 100%)' }}
           >
             <div className="flex items-center gap-2 sm:gap-4">
-              <BanderaIcon colors={['#C8102E', '#111111']} />
+              <EscudoIcon tipo="lepra" />
               <div className="flex-1 min-w-0 overflow-hidden">
                 <div
-                  className="text-base sm:text-4xl font-black uppercase tracking-tight leading-none"
-                  style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900 }}
+                  className="text-base sm:text-4xl uppercase tracking-tight leading-none"
+                  style={{ fontFamily: 'var(--font-inter)', fontWeight: 900 }}
                 >
                   LA LEPRA
                 </div>
@@ -171,8 +171,8 @@ export default function Home() {
             </div>
             <div className="mt-2 sm:mt-4 flex items-baseline gap-2">
               <span
-                className="text-2xl sm:text-5xl font-black tabular-nums"
-                style={{ fontWeight: 900 }}
+                className="text-2xl sm:text-5xl tabular-nums"
+                style={{ fontFamily: 'var(--font-inter)', fontWeight: 900 }}
               >
                 {nf(lepraCount)}
               </span>
@@ -182,33 +182,33 @@ export default function Home() {
             </div>
           </button>
 
-          {/* Lado Canalla */}
+          {/* Lado Canalla — degradado de azul a amarillo (izq a der) */}
           <button
             onClick={() => abrirModal('canalla')}
             className="relative p-3 sm:p-7 text-right transition-all hover:brightness-110 group"
-            style={{ background: 'linear-gradient(135deg, #0033A0 0%, #001a50 100%)' }}
+            style={{ background: 'linear-gradient(90deg, #0033A0 0%, #FFD100 100%)' }}
           >
             <div className="flex items-center gap-2 sm:gap-4 justify-end">
               <div className="flex-1 min-w-0 overflow-hidden">
                 <div
-                  className="text-base sm:text-4xl font-black uppercase tracking-tight leading-none"
-                  style={{ fontWeight: 900 }}
+                  className="text-base sm:text-4xl uppercase tracking-tight leading-none"
+                  style={{ fontFamily: 'var(--font-inter)', fontWeight: 900, color: '#fff' }}
                 >
                   EL CANALLA
                 </div>
-                <div className="text-[9px] sm:text-xs uppercase tracking-widest text-white/70 mt-1 hidden sm:block">
+                <div className="text-[9px] sm:text-xs uppercase tracking-widest text-white/80 mt-1 hidden sm:block">
                   Rosario Central
                 </div>
               </div>
-              <BanderaIcon colors={['#0033A0', '#FFD100']} />
+              <EscudoIcon tipo="canalla" />
             </div>
             <div className="mt-2 sm:mt-4 flex items-baseline gap-2 justify-end">
-              <span className="text-[10px] sm:text-sm uppercase tracking-wider text-white/70">
+              <span className="text-[10px] sm:text-sm uppercase tracking-wider text-white/80">
                 {total > 0 ? pf(Math.round(pctCanalla * 100) / 100) : '—'} · hinchas
               </span>
               <span
-                className="text-2xl sm:text-5xl font-black tabular-nums"
-                style={{ fontWeight: 900 }}
+                className="text-2xl sm:text-5xl tabular-nums"
+                style={{ fontFamily: 'var(--font-inter)', fontWeight: 900, color: '#fff' }}
               >
                 {nf(canallaCount)}
               </span>
@@ -276,24 +276,30 @@ export default function Home() {
             <button
               onClick={() => abrirModal('lepra')}
               className="p-4 sm:p-5 rounded-2xl text-white transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl"
-              style={{ background: 'linear-gradient(135deg, #C8102E 0%, #6a0a1a 100%)' }}
+              style={{ background: 'linear-gradient(90deg, #C8102E 0%, #111111 100%)' }}
             >
               <div className="text-xs sm:text-sm uppercase tracking-widest text-white/80">
                 Sumar hinchas para
               </div>
-              <div className="text-xl sm:text-2xl font-black uppercase mt-0.5" style={{ fontWeight: 900 }}>
+              <div
+                className="text-xl sm:text-2xl uppercase mt-0.5"
+                style={{ fontFamily: 'var(--font-inter)', fontWeight: 900 }}
+              >
                 La Lepra
               </div>
             </button>
             <button
               onClick={() => abrirModal('canalla')}
               className="p-4 sm:p-5 rounded-2xl text-white transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl"
-              style={{ background: 'linear-gradient(135deg, #0033A0 0%, #001a50 100%)' }}
+              style={{ background: 'linear-gradient(90deg, #0033A0 0%, #FFD100 100%)' }}
             >
-              <div className="text-xs sm:text-sm uppercase tracking-widest text-white/80">
+              <div className="text-xs sm:text-sm uppercase tracking-widest text-white/90">
                 Sumar hinchas para
               </div>
-              <div className="text-xl sm:text-2xl font-black uppercase mt-0.5" style={{ fontWeight: 900 }}>
+              <div
+                className="text-xl sm:text-2xl uppercase mt-0.5"
+                style={{ fontFamily: 'var(--font-inter)', fontWeight: 900, color: '#fff' }}
+              >
                 El Canalla
               </div>
             </button>
@@ -431,22 +437,30 @@ export default function Home() {
 
 // ---------- Sub-componentes ----------
 
-// Bandera estilizada (escudo alternativo) con dos colores en franjas verticales.
-function BanderaIcon({ colors }: { colors: [string, string] }) {
-  const [c1, c2] = colors
+// Escudo estilizado de cada club. Acepta distintos patrones:
+//   - 'lepra': 2 mitades verticales (rojo a la izq, negro a la der).
+//   - 'canalla': 4 rayas verticales intercaladas (azul, amarillo, azul, amarillo).
+function EscudoIcon({ tipo }: { tipo: 'lepra' | 'canalla' }) {
+  if (tipo === 'lepra') {
+    // 2 mitades verticales: rojo y negro (Newell's).
+    return (
+      <div
+        className="w-10 h-12 sm:w-12 sm:h-14 rounded-md overflow-hidden border-2 border-white/30 shadow-lg flex-shrink-0 relative flex"
+      >
+        <div className="w-1/2 h-full" style={{ background: '#C8102E' }} />
+        <div className="w-1/2 h-full" style={{ background: '#111111' }} />
+      </div>
+    )
+  }
+  // canalla: 4 rayas verticales intercaladas (azul, amarillo, azul, amarillo).
   return (
     <div
-      className="w-10 h-12 sm:w-12 sm:h-14 rounded-md overflow-hidden border-2 border-white/20 shadow-lg flex-shrink-0 relative"
-      style={{ background: c1 }}
+      className="w-10 h-12 sm:w-12 sm:h-14 rounded-md overflow-hidden border-2 border-white/30 shadow-lg flex-shrink-0 relative flex"
     >
-      <div
-        className="absolute inset-y-0 left-0 w-1/3"
-        style={{ background: c2 }}
-      />
-      <div
-        className="absolute inset-y-0 right-0 w-1/3"
-        style={{ background: c2 }}
-      />
+      <div className="w-1/4 h-full" style={{ background: '#0033A0' }} />
+      <div className="w-1/4 h-full" style={{ background: '#FFD100' }} />
+      <div className="w-1/4 h-full" style={{ background: '#0033A0' }} />
+      <div className="w-1/4 h-full" style={{ background: '#FFD100' }} />
     </div>
   )
 }
