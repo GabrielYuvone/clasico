@@ -37,7 +37,14 @@ const RISE = 0.42
 const SALTO = 1.8
 const FACADE_Z = -17
 const N_IN = 3.2, N_OUT = 2.15
-const ELEV = 40 * Math.PI / 180
+// Elevación de la cámara. Más alta = vista más cenital (más "desde arriba"),
+// más baja = vista más lateral (más perspectiva de las tribunas).
+// 90° = cenital pura (vista 100% desde arriba, sin ver las bandejas).
+// 40° = la original de lapopular.online (perspectiva marcada).
+// 80° = vista "dron muy alto" — casi cenital, el medio y medio se ve clarísimo
+//       y los colores de cada mitad saltan a la vista. Las bandejas se ven
+//       casi como anillos concéntricos vistos desde arriba.
+const ELEV = 80 * Math.PI / 180
 const S = 3.1
 const PAD = 10
 
@@ -193,15 +200,24 @@ function riserPts(u: number, t0: number, t1: number, z: number, h: number): P[] 
 // quedaron del lado contrario.
 
 // Para cada butaca, el "lado" (1 = Lepra, 2 = Canalla). Lo precalculamos
-// usando el coseno del ángulo central: cos > 0 → Canalla, cos < 0 → Lepra.
-// Las butacas justo en el eje (cos ≈ 0) se reparten por columna par/impar
-// para que la división no deje una raya rara en los costados cortos.
+// usando el COSENO del ángulo central: cos > 0 → derecha en pantalla → Canalla,
+// cos < 0 → izquierda en pantalla → La Lepra.
+//
+// La cancha se ve en pantalla con el LARGO en Y (vertical) y el ANCHO en X
+// (horizontal) — el óvalo del estadio está parado, no acostado. Por eso
+// dividir con cos(tm) (que separa las cabeceras este/oeste del espacio en
+// izquierda/derecha de la pantalla) SÍ se ve como "medio y medio" clásico:
+// La Lepra a la izquierda, Canalla a la derecha, divididos por una línea
+// vertical al medio de la cancha.
+//
+// Las butacas justo en el eje (cos ≈ 0, sobre las cabeceras norte/sur) las
+// repartimos por columna par/impar para que la división no deje una raya rara.
 const SEAT_SIDE: number[] = seats.map((s) => {
   const dcol = TAU / NCOL
   const tm = s.col * dcol + dcol / 2
   const cosT = Math.cos(tm)
-  if (cosT > 0.05) return 2 // Canalla
-  if (cosT < -0.05) return 1 // Lepra
+  if (cosT > 0.05) return 2 // Canalla (lado derecho en pantalla)
+  if (cosT < -0.05) return 1 // Lepra (lado izquierdo en pantalla)
   return s.col % 2 === 0 ? 1 : 2
 })
 
