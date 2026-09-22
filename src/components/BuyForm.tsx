@@ -36,7 +36,7 @@ type Props = {
 const PICKS = [1, 5, 10, 50, 100, 500, 1000]
 
 export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libres, config, onBought }: Props) {
-  const [slug, setSlug] = useState<string>(preselectSlug || '')
+  const [slug, setSlug] = useState<string>(preselectSlug || 'lepra')
   const [cantidad, setCantidad] = useState<number>(10)
   const [custom, setCustom] = useState<string>('')
   const [nombre, setNombre] = useState<string>('')
@@ -45,7 +45,7 @@ export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libr
 
   useEffect(() => {
     if (open) {
-      setSlug(preselectSlug || '')
+      setSlug(preselectSlug || 'lepra')
       setCantidad(10)
       setCustom('')
       setNombre('')
@@ -72,7 +72,7 @@ export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libr
       })
       const data = await res.json()
       if (!data.ok) { toast.error(data.error || 'No se pudo agregar.'); return }
-      toast.success(`¡Listo! ${nf(qty)} ${qty === 1 ? 'hincha' : 'hinchas'} para ${data.club} (modo amigo).`)
+      toast.success(`¡Listo! ${nf(qty)} ${qty === 1 ? 'hincha' : 'hinchas'} para ${data.club}.`)
       onBought()
       onOpenChange(false)
     } catch (e) {
@@ -89,9 +89,6 @@ export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libr
 
     setSubmitting(true)
     try {
-      // Llamamos a /api/mp/preference para crear la preferencia en MP y
-      // obtener el init_point (URL de Checkout Pro). Esto también crea la
-      // Purchase en estado "pendiente" en la DB, con mpPreferenceId.
       const res = await fetch('/api/mp/preference', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -102,12 +99,6 @@ export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libr
         toast.error(data.error || 'No se pudo crear el link de pago.')
         return
       }
-      // Abrir Checkout Pro en otra pestaña. MP muestra el cobro, el usuario
-      // paga, y después redirige a nuestro back_url (el home). El webhook
-      // que MP dispara al confirmar el pago va a marcar la compra como
-      // "pagada" solo. El usuario no tiene que confirmar nada.
-      // En producción usamos initPoint (mundo real); en desarrollo caemos a
-      // sandboxInitPoint (pagos de prueba). El backend decide cuál devuelve.
       const link = data.initPoint || data.sandboxInitPoint
       if (!link) {
         toast.error('Mercado Pago no devolvió un link de pago.')
@@ -127,61 +118,61 @@ export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libr
     }
   }
 
+  const isLepra = slug === 'lepra'
+  const clubColor = isLepra ? '#C8102E' : '#0033A0'
+  const clubApodo = isLepra ? 'La Lepra' : 'Canalla'
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg border-4 border-black shadow-[8px_8px_0_rgba(0,0,0,0.55)] rounded-none">
+      <DialogContent className="max-w-lg bg-[#161618] border border-white/15 text-white rounded-2xl shadow-2xl">
         <DialogHeader>
-          <DialogTitle className="font-mono font-bold uppercase tracking-wide">
-            Metelos a la cancha
+          <DialogTitle className="text-white text-2xl font-black uppercase tracking-tight">
+            Sumar hinchas al clásico
           </DialogTitle>
-          <DialogDescription className="font-mono text-xs uppercase">
-            Sumá hinchas para tu club. Pagá con Mercado Pago (los hinchas pintan solos cuando MP confirma el pago) o, si sos amigo, saltate el pago.
+          <DialogDescription className="text-white/60 text-xs uppercase tracking-widest">
+            Elegí tu bando, meté hinchas y pintá la tribuna. Pagá con Mercado Pago o, si sos amigo, saltá el pago.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 font-mono">
-          {/* Club picker */}
-          {!selectedClub ? (
-            <div>
-              <Label className="text-xs uppercase mb-2 block">¿Para qué club son?</Label>
-              <select
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                className="w-full px-3 py-2 border-4 border-black bg-[var(--panel2,#fffdf2)] font-mono font-bold text-sm"
-              >
-                <option value="">Elegí un club…</option>
-                {clubs.map((c) => (
-                  <option key={c.slug} value={c.slug}>
-                    {c.nombre} — {c.apodo}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 border-4 border-black bg-[var(--panel2,#fffdf2)] p-2">
-              <div
-                className="w-12 h-12 border-2 border-black flex items-center justify-center font-mono font-bold text-lg text-white"
-                style={{ background: selectedClub.color }}
-              >
-                {selectedClub.nombre.charAt(0)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-mono font-bold uppercase text-sm leading-tight">{selectedClub.nombre}</div>
-                <div className="text-[10px] text-gray-600">{selectedClub.apodo}</div>
-              </div>
+        <div className="space-y-5">
+          {/* Selector de bando — 2 botones grandes */}
+          <div>
+            <Label className="text-[10px] uppercase tracking-widest text-white/50 mb-2 block">
+              ¿Para qué bando son?
+            </Label>
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => setSlug('')}
-                className="text-[10px] underline text-green-700 uppercase font-mono font-bold"
+                onClick={() => setSlug('lepra')}
+                className={
+                  'p-3 rounded-xl text-white font-black uppercase tracking-wider transition-all ' +
+                  (isLepra ? 'ring-2 ring-white scale-[1.02]' : 'opacity-70 hover:opacity-100')
+                }
+                style={{ background: 'linear-gradient(135deg, #C8102E 0%, #6a0a1a 100%)' }}
               >
-                cambiar
+                <div className="text-[10px] uppercase tracking-widest text-white/70">Sumar a</div>
+                <div className="text-lg">La Lepra</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSlug('canalla')}
+                className={
+                  'p-3 rounded-xl text-white font-black uppercase tracking-wider transition-all ' +
+                  (!isLepra ? 'ring-2 ring-white scale-[1.02]' : 'opacity-70 hover:opacity-100')
+                }
+                style={{ background: 'linear-gradient(135deg, #0033A0 0%, #001a50 100%)' }}
+              >
+                <div className="text-[10px] uppercase tracking-widest text-white/70">Sumar a</div>
+                <div className="text-lg">Canalla</div>
               </button>
             </div>
-          )}
+          </div>
 
           {/* Cantidad */}
           <div>
-            <Label className="text-xs uppercase mb-2 block">¿Cuántos hinchas metés?</Label>
+            <Label className="text-[10px] uppercase tracking-widest text-white/50 mb-2 block">
+              ¿Cuántos hinchas metés?
+            </Label>
             <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
               {PICKS.map((p) => (
                 <button
@@ -189,16 +180,21 @@ export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libr
                   type="button"
                   onClick={() => { setCantidad(p); setCustom('') }}
                   className={
-                    'border-4 border-black px-2 py-2 font-mono font-bold text-sm transition-colors ' +
-                    (qty === p && !custom ? 'bg-red-600 text-white' : 'bg-[var(--panel2,#fffdf2)] hover:bg-yellow-300')
+                    'p-2 rounded-lg text-sm font-black transition-all ' +
+                    (qty === p && !custom
+                      ? 'text-white ring-2 ring-white'
+                      : 'bg-white/5 text-white/70 hover:bg-white/10')
                   }
+                  style={qty === p && !custom ? { background: clubColor } : {}}
                 >
                   {p}
                 </button>
               ))}
             </div>
             <div className="mt-2">
-              <Label className="text-[10px] uppercase text-gray-600">Otra cantidad (1 a 2.000)</Label>
+              <Label className="text-[10px] uppercase tracking-widest text-white/40">
+                Otra cantidad (1 a 2.000)
+              </Label>
               <Input
                 type="number"
                 min={1}
@@ -206,80 +202,84 @@ export default function BuyForm({ open, onOpenChange, clubs, preselectSlug, libr
                 value={custom}
                 onChange={(e) => setCustom(e.target.value)}
                 placeholder="Personalizada…"
-                className="mt-1 border-4 border-black rounded-none font-mono font-bold"
+                className="mt-1 bg-white/5 border-white/10 text-white rounded-lg font-bold placeholder:text-white/30"
               />
             </div>
           </div>
 
           {/* Nombre */}
           <div>
-            <Label className="text-xs uppercase mb-2 block">
-              Dejá tu nombre <span className="text-gray-500 normal-case">— opcional</span>
+            <Label className="text-[10px] uppercase tracking-widest text-white/50 mb-2 block">
+              Tu nombre <span className="text-white/30 normal-case">— opcional</span>
             </Label>
             <Input
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               maxLength={40}
               placeholder="Anónimo"
-              className="border-4 border-black rounded-none font-mono font-bold"
+              className="bg-white/5 border-white/10 text-white rounded-lg font-bold placeholder:text-white/30"
             />
           </div>
 
           {/* Mensaje */}
           <div>
-            <Label className="text-xs uppercase mb-2 block">
-              Bardeá, alentá, dejá tu mensaje <span className="text-gray-500 normal-case">— opcional</span>
+            <Label className="text-[10px] uppercase tracking-widest text-white/50 mb-2 block">
+              Bardeá, alentá, dejá tu mensaje <span className="text-white/30 normal-case">— opcional</span>
             </Label>
             <Textarea
               value={mensaje}
               onChange={(e) => setMensaje(e.target.value)}
               maxLength={140}
               placeholder="Aguante el más grande"
-              className="border-4 border-black rounded-none font-mono font-bold resize-none h-16"
+              className="bg-white/5 border-white/10 text-white rounded-lg font-bold resize-none h-16 placeholder:text-white/30"
             />
-            <div className="text-[10px] text-gray-500 text-right">{mensaje.length} / 140</div>
+            <div className="text-[10px] text-white/30 text-right">{mensaje.length} / 140</div>
           </div>
 
           {/* Total */}
-          <div className="flex items-center justify-between bg-yellow-300 border-4 border-black px-3 py-2">
-            <span className="font-mono font-bold uppercase text-xs">
-              Total · {nf(qty)} {qty === 1 ? 'hincha' : 'hinchas'} × ${precio}
+          <div
+            className="flex items-center justify-between rounded-xl px-4 py-3"
+            style={{ background: 'rgba(255,209,0,0.1)', border: '1px solid rgba(255,209,0,0.3)' }}
+          >
+            <span className="text-xs uppercase tracking-widest text-white/70">
+              Total · {nf(qty)} {qty === 1 ? 'hincha' : 'hinchas'} para {clubApodo} × ${precio}
             </span>
-            <span className="font-mono font-bold text-2xl text-red-700">${nf(total)}</span>
+            <span className="text-2xl font-black text-yellow-400">${nf(total)}</span>
           </div>
 
-          {/* Botón PAGAR con Mercado Pago (automático) */}
+          {/* Pagar con MP */}
           <div className="space-y-2">
             <Button
               onClick={pagarConMP}
-              disabled={submitting || !slug}
-              className="w-full border-4 border-black bg-[#00b1ea] hover:bg-[#0096c7] text-white font-mono font-bold uppercase tracking-wide rounded-none shadow-[4px_4px_0_rgba(0,0,0,0.55)] disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={submitting}
+              className="w-full rounded-xl py-3 text-white font-black uppercase tracking-wider transition-all hover:brightness-110 disabled:opacity-50"
+              style={{ background: 'linear-gradient(135deg, #00b1ea 0%, #0096c7 100%)' }}
             >
               {submitting ? 'Generando link…' : `Pagar $${nf(total)} con Mercado Pago`}
             </Button>
-            <div className="text-[10px] text-center text-gray-700 bg-[#fff6c9] border-2 border-black p-1.5">
-              <b>Automático:</b> cuando MP confirma el pago, los hinchas pintan la cancha solos. <b>Nadie tiene que confirmar nada a mano.</b>
+            <div className="text-[10px] text-center text-white/50 bg-white/5 border border-white/10 rounded-lg p-2">
+              <b className="text-white/80">Automático:</b> cuando MP confirma el pago, los hinchas pintan la cancha solos.
             </div>
           </div>
 
           {/* Separador */}
           <div className="flex items-center gap-3 my-1">
-            <div className="flex-1 h-[3px] bg-black" />
-            <span className="text-[10px] uppercase text-gray-600 font-mono font-bold">o</span>
-            <div className="flex-1 h-[3px] bg-black" />
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="text-[10px] uppercase tracking-widest text-white/40 font-bold">o</span>
+            <div className="flex-1 h-px bg-white/10" />
           </div>
 
-          {/* Botón SOY AMIGO (no paga, directo a pagada) */}
+          {/* Soy amigo */}
           <Button
             onClick={postBuyAmigo}
-            disabled={submitting || !slug}
-            className="w-full border-4 border-black bg-yellow-300 hover:bg-yellow-400 text-black font-mono font-bold uppercase tracking-wide rounded-none shadow-[4px_4px_0_rgba(0,0,0,0.55)] disabled:opacity-60 disabled:cursor-not-allowed"
+            disabled={submitting}
+            className="w-full rounded-xl py-3 bg-yellow-400 hover:bg-yellow-500 text-black font-black uppercase tracking-wider transition-all hover:brightness-110 disabled:opacity-50"
           >
             🤝 Soy amigo · meter sin pagar
           </Button>
 
-          <p className="text-[10px] text-gray-600 leading-relaxed text-center">
-            Quedan <b className="text-red-700">{nf(libres)}</b> lugares libres. Cuando se llena la cancha, se acaba.
+          <p className="text-[10px] text-white/40 text-center">
+            Quedan <b className="text-yellow-400">{nf(libres)}</b> lugares libres. Cuando se llena la cancha, se acaba.
           </p>
         </div>
       </DialogContent>

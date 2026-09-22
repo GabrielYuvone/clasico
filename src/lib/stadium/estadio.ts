@@ -180,19 +180,96 @@ function riserPts(u: number, t0: number, t1: number, z: number, h: number): P[] 
   return [proj(p1.x, p1.y, z), proj(p2.x, p2.y, z), proj(p2.x, p2.y, z - h), proj(p1.x, p1.y, z - h)]
 }
 
-// ---------- reparto de hinchas según el aforo FIJO ----------
+// ---------- reparto de hinchas: CLÁSICO ROSARINO ----------
+//
+// El estadio está dividido en dos mitades a lo largo del eje Y (vista aérea):
+//   - Lado IZQUIERDO (cos(ángulo) < 0): La Lepra (rojo y negro, Newell's).
+//   - Lado DERECHO (cos(ángulo) > 0): Canalla (azul y amarillo, Rosario Central).
+//
+// Cada club primero llena las butacas LIBRES de su propia mitad, de abajo
+// hacia arriba, sector por sector (orden de venta original). Si un club
+// supera su mitad (tiene más hinchas que butacas libres de su lado), sus
+// excedentes "invaden" el lado del otro, ocupando las butacas libres que
+// quedaron del lado contrario.
+
+// Para cada butaca, el "lado" (1 = Lepra, 2 = Canalla). Lo precalculamos
+// usando el coseno del ángulo central: cos > 0 → Canalla, cos < 0 → Lepra.
+// Las butacas justo en el eje (cos ≈ 0) se reparten por columna par/impar
+// para que la división no deje una raya rara en los costados cortos.
+const SEAT_SIDE: number[] = seats.map((s) => {
+  const dcol = TAU / NCOL
+  const tm = s.col * dcol + dcol / 2
+  const cosT = Math.cos(tm)
+  if (cosT > 0.05) return 2 // Canalla
+  if (cosT < -0.05) return 1 // Lepra
+  return s.col % 2 === 0 ? 1 : 2
+})
+
 function allocate(clubs: ClubView[], capacity: number): (ClubView | null)[] {
   const out: (ClubView | null)[] = new Array(seats.length).fill(null)
-  const libres: number[] = []
-  seats.forEach((s, i) => { if (!s.stair) libres.push(i) })
-  let p = 0
-  clubs.forEach((c) => {
-    if (!c.count) return
-    let n = Math.round((c.count / capacity) * libres.length)
-    if (n < 1) n = 1
-    if (p + n > libres.length) n = libres.length - p
-    for (let k = 0; k < n; k++) out[libres[p++]] = c
-  })
+
+  // Identificamos los 2 clubes del clásico por slug (con fallback por nombre).
+  const lepra = clubs.find((c) => c.slug === 'lepra' || c.nombre.toLowerCase().includes('newell')) || null
+  const canalla = clubs.find((c) => c.slug === 'canalla' || c.nombre.toLowerCase().includes('central')) || null
+
+  // Fallback al allocator viejo si no encontramos ninguno del clásico.
+  if (!lepra && !canalla) {
+    const libres: number[] = []
+    seats.forEach((s, i) => { if (!s.stair) libres.push(i) })
+    let p = 0
+    clubs.forEach((c) => {
+      if (!c.count) return
+      let n = Math.round((c.count / capacity) * libres.length)
+      if (n < 1) n = 1
+      if (p + n > libres.length) n = libres.length - p
+      for (let k = 0; k < n; k++) out[libres[p++]] = c
+    })
+    return out
+  }
+
+  // Cuántas butacas pinta cada club (proporcional al count, mínimo 1 si > 0).
+  const totalLibres = seats.filter((s) => !s.stair).length
+  const calcN = (count: number): number => {
+    if (!count) return 0
+    const n = Math.round((count / capacity) * totalLibres)
+    return Math.max(n, 1)
+  }
+  const nLepra = lepra ? calcN(lepra.count) : 0
+  const nCanalla = canalla ? calcN(canalla.count) : 0
+
+  const esLibre = (i: number) => !seats[i].stair && out[i] === null
+
+  // Llena las butacas del `lado` con `club`, hasta `n`. Devuelve cuántas
+  // faltaron (las que no entraron porque se acabó el lado).
+  function llenarLado(lado: number, club: ClubView, n: number): number {
+    let restantes = n
+    for (let i = 0; i < seats.length && restantes > 0; i++) {
+      if (SEAT_SIDE[i] === lado && esLibre(i)) {
+        out[i] = club
+        restantes--
+      }
+    }
+    return restantes
+  }
+
+  // 1. Cada club llena su propia mitad.
+  const restanLepra = lepra ? llenarLado(1, lepra, nLepra) : 0
+  const restanCanalla = canalla ? llenarLado(2, canalla, nCanalla) : 0
+
+  // 2. Si un club tiene excedentes, invade la otra mitad (solo butacas libres).
+  if (restanLepra > 0 && lepra) {
+    let restantes = restanLepra
+    for (let i = 0; i < seats.length && restantes > 0; i++) {
+      if (SEAT_SIDE[i] === 2 && esLibre(i)) { out[i] = lepra; restantes-- }
+    }
+  }
+  if (restanCanalla > 0 && canalla) {
+    let restantes = restanCanalla
+    for (let i = 0; i < seats.length && restantes > 0; i++) {
+      if (SEAT_SIDE[i] === 1 && esLibre(i)) { out[i] = canalla; restantes-- }
+    }
+  }
+
   return out
 }
 
