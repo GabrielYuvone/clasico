@@ -55,3 +55,6 @@ server.log
 /skills/
 # SQLite database (contiene compras y datos locales)
 /db/
+
+# Capturas de pantalla y archivos de prueba
+/download/
