@@ -120,44 +120,63 @@ export default function Home() {
   // ----- render -----
   return (
     <div
-      className="min-h-screen flex flex-col text-white"
+      className="min-h-screen flex flex-col text-white relative"
       style={{
-        background: 'linear-gradient(180deg, #0d0d0f 0%, #161618 50%, #0d0d0f 100%)',
         fontFamily: "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif",
         fontWeight: 500,
       }}
     >
+      {/* Fondo: imagen generada mitad Lepra / mitad Canalla */}
+      <div
+        className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: 'url(/bg-clasico.png)',
+          // En mobile (retrato) la imagen se ve "acostada" (1344x768), así que
+          // la estiramos un poco para que cubra bien. En desktop la cubre tal
+          // cual con bg-cover.
+        }}
+        aria-hidden="true"
+      />
+      {/* Overlay oscuro para que el contenido se lea encima del fondo */}
+      <div
+        className="fixed inset-0 -z-10"
+        style={{
+          background:
+            'linear-gradient(180deg, rgba(8,8,10,0.85) 0%, rgba(8,8,10,0.75) 50%, rgba(8,8,10,0.85) 100%)',
+        }}
+        aria-hidden="true"
+      />
       <div className="max-w-[1400px] mx-auto w-full flex-1 flex flex-col px-4 sm:px-6 py-4 sm:py-6">
         {/* ---------- Cabezal cruzado ---------- */}
         <header className="grid grid-cols-2 mb-6 rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
           {/* Lado Lepra */}
           <button
             onClick={() => abrirModal('lepra')}
-            className="relative p-5 sm:p-7 text-left transition-all hover:brightness-110 group"
+            className="relative p-3 sm:p-7 text-left transition-all hover:brightness-110 group"
             style={{ background: 'linear-gradient(135deg, #C8102E 0%, #6a0a1a 100%)' }}
           >
-            <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <BanderaIcon colors={['#C8102E', '#111111']} />
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 overflow-hidden">
                 <div
-                  className="text-2xl sm:text-4xl font-black uppercase tracking-tight leading-none"
+                  className="text-base sm:text-4xl font-black uppercase tracking-tight leading-none"
                   style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900 }}
                 >
                   LA LEPRA
                 </div>
-                <div className="text-[10px] sm:text-xs uppercase tracking-widest text-white/70 mt-1">
+                <div className="text-[9px] sm:text-xs uppercase tracking-widest text-white/70 mt-1 hidden sm:block">
                   Newell&apos;s Old Boys
                 </div>
               </div>
             </div>
-            <div className="mt-3 sm:mt-4 flex items-baseline gap-2">
+            <div className="mt-2 sm:mt-4 flex items-baseline gap-2">
               <span
-                className="text-3xl sm:text-5xl font-black tabular-nums"
+                className="text-2xl sm:text-5xl font-black tabular-nums"
                 style={{ fontWeight: 900 }}
               >
                 {nf(lepraCount)}
               </span>
-              <span className="text-xs sm:text-sm uppercase tracking-wider text-white/70">
+              <span className="text-[10px] sm:text-sm uppercase tracking-wider text-white/70">
                 hinchas · {total > 0 ? pf(Math.round(pctLepra * 100) / 100) : '—'}
               </span>
             </div>
@@ -166,29 +185,29 @@ export default function Home() {
           {/* Lado Canalla */}
           <button
             onClick={() => abrirModal('canalla')}
-            className="relative p-5 sm:p-7 text-right transition-all hover:brightness-110 group"
+            className="relative p-3 sm:p-7 text-right transition-all hover:brightness-110 group"
             style={{ background: 'linear-gradient(135deg, #0033A0 0%, #001a50 100%)' }}
           >
-            <div className="flex items-center gap-3 sm:gap-4 justify-end">
-              <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 sm:gap-4 justify-end">
+              <div className="flex-1 min-w-0 overflow-hidden">
                 <div
-                  className="text-2xl sm:text-4xl font-black uppercase tracking-tight leading-none"
+                  className="text-base sm:text-4xl font-black uppercase tracking-tight leading-none"
                   style={{ fontWeight: 900 }}
                 >
                   CANALLA
                 </div>
-                <div className="text-[10px] sm:text-xs uppercase tracking-widest text-white/70 mt-1">
+                <div className="text-[9px] sm:text-xs uppercase tracking-widest text-white/70 mt-1 hidden sm:block">
                   Rosario Central
                 </div>
               </div>
               <BanderaIcon colors={['#0033A0', '#FFD100']} />
             </div>
-            <div className="mt-3 sm:mt-4 flex items-baseline gap-2 justify-end">
-              <span className="text-xs sm:text-sm uppercase tracking-wider text-white/70">
+            <div className="mt-2 sm:mt-4 flex items-baseline gap-2 justify-end">
+              <span className="text-[10px] sm:text-sm uppercase tracking-wider text-white/70">
                 {total > 0 ? pf(Math.round(pctCanalla * 100) / 100) : '—'} · hinchas
               </span>
               <span
-                className="text-3xl sm:text-5xl font-black tabular-nums"
+                className="text-2xl sm:text-5xl font-black tabular-nums"
                 style={{ fontWeight: 900 }}
               >
                 {nf(canallaCount)}
