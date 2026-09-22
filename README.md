@@ -32,7 +32,13 @@ cp .env.example .env
 
 # Crear la DB y seedear los clubes
 bun run db:push
-bun run scripts/seed.ts
+bun run scripts/seed-clasico.ts  # 2 clubes del clásico (La Lepra + El Canalla)
+# bun run scripts/seed.ts        # alternativo: 46 clubes argentinos
+
+> ⚠️ **IMPORTANTE — scripts que pueden borrar datos**:
+> - `bun run db:push` — seguro si no cambiaste el schema. Si el schema cambió y requiere borrar datos, **falla** en lugar de borrar silenciosamente. Para forzar (sabiendo lo que hacés): `bun run db:push-force`.
+> - `bun run db:reset` y `bun run db:migrate` — **borran todas las compras** (resetean la DB). Solo usar en desarrollo limpio.
+> - Los scripts `scripts/seed-clasico.ts` y `scripts/seed.ts` usan `upsert` y **NO borran purchases**. Se pueden correr las veces que hagan falta.
 
 # Levantar el dev server
 bun run dev
@@ -65,8 +71,11 @@ bun run scripts/approve.ts --reject <id>   # rechazar una
 
 ```
 prisma/schema.prisma           Modelos Club y Purchase
-scripts/seed.ts                Seed de 46 clubes argentinos
+scripts/seed-clasico.ts        Seed de los 2 clubes del Clásico (safe, no borra)
+scripts/seed.ts                Seed de 46 clubes argentinos (safe, no borra)
 scripts/approve.ts             Aprobación manual de compras
+scripts/recover-purchase.ts   Recrear una compra a mano (para recuperar pagos perdidos)
+scripts/test-webhook.js        Test local del webhook con firma HMAC
 src/app/api/
   clubs/route.ts               GET /api/clubs        (lista con hinchas)
   feed/route.ts                GET /api/feed         (últimas compras)
