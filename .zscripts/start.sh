@@ -71,6 +71,18 @@ if [ -f "./next-service-dist/server.js" ]; then
     echo "🚀 启动 Next.js 服务器..."
     cd next-service-dist/ || exit 1
     
+    # Cargar variables de entorno desde .env si existe (setea DATABASE_URL
+    # y las credenciales de Mercado Pago, etc). Esto es lo que permite que
+    # la app use Neon (PostgreSQL externo) en lugar del SQLite packaged,
+    # y que tenga las credenciales de MP en el runtime de producción.
+    if [ -f "./.env" ]; then
+        echo "📦 Cargando .env del build..."
+        set -a
+        # shellcheck disable=SC1091
+        . ./.env
+        set +a
+    fi
+    
     # 设置环境变量
     export NODE_ENV=production
     export PORT="${PORT:-3000}"

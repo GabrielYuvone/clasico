@@ -1,5 +1,8 @@
-// La Tribuna — estadio virtual de 100.000 ubicaciones.
-// Cada compra (Purchase) es un visitante que sumó N hinchas para un club.
+// La Tribuna del Clásico — estadio virtual de 100.000 ubicaciones.
+//
+// DB: PostgreSQL (Neon). Antes era SQLite, pero el ambiente de preview
+// resetea el filesystem en cada redeploy, así que movimos la DB a Neon
+// (Postgres managed, gratis 0.5GB) para que las purchases persistan.
 //
 // Estado del pago:
 //   - "pendiente": el visitante generó la preferencia en MP pero todavía no
@@ -18,13 +21,13 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model Club {
   id            String   @id @default(cuid())
-  slug          String   @unique // estable: "boca", "river", ...
+  slug          String   @unique // estable: "lepra", "canalla", ...
   nombre        String
   apodo         String
   liga          String
