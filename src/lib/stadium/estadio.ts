@@ -26,8 +26,16 @@ export type EstadioResult = {
 
 // ---------- geometría (unidades ~ metros) ----------
 const PW = 105, PH = 68
-const A_IN = 62, B_IN = 46
-const A_OUT = 179, B_OUT = 132
+// Dimensiones del estadio: forma rectangular con bordes redondeados (stadium shape).
+//   A = largo total (eje X), B = ancho total (eje Y).
+//   Lados rectos (tribunas laterales): longitud A-B.
+//   Cabeceras: semicírculos de radio B/2 en cada extremo.
+// Hacemos A mucho mayor que B para que los lados rectos queden bien rectos
+// y largos (como una cancha de fútbol), y los bordes redondeados (cabeceras)
+// queden curvos y marcados. Antes era A=179/B=132 (ratio 1.36); ahora lo
+// estiramos a A=200/B=128 (ratio 1.56) → lados rectos más largos y planos.
+const A_IN = 70, B_IN = 50
+const A_OUT = 200, B_OUT = 128
 const TIERS = [8, 9, 10]
 const WALK = 1.7
 const NCOL = 216
@@ -105,32 +113,36 @@ function by(u: number) { return B_IN + (B_OUT - B_IN) * (u / uTotal) }
 function nx(u: number) { return N_IN + (N_OUT - N_IN) * (u / uTotal) }
 
 // Discorectángulo (stadium shape): rectángulo con semicírculos en los extremos.
-// Esta es la forma REAL de un estadio de fútbol: dos tribunas laterales rectas
-// y largas (los lados largos del rectángulo, paralelos al eje Y) y dos
-// cabeceras curvas en los extremos (los semicírculos, paralelos al eje X).
+// Forma real de un estadio de fútbol: dos tribunas laterales rectas y largas
+// (paralelas al eje Y) y dos cabeceras curvas en los extremos (semicírculos
+// paralelos al eje X).
 //
 // Para cada ángulo th, calculamos el punto en el perímetro:
 //   - En el rango |cos(th)| < B/A: el punto está en uno de los lados rectos
-//     (perpendicular al eje Y), a distancia B/2 del eje X.
+//     (perpendicular al eje Y), a distancia B/2 del eje X, X proporcional a
+//     cos(th) para barrer todo el largo del lado recto (A/2).
 //   - En el rango |cos(th)| >= B/A: el punto está en uno de los semicírculos,
 //     cuyo centro está a distancia (A-B)/2 del origen y radio B/2.
 //
-// A es el "largo total" del estadio (eje X), B es el "ancho total" (eje Y).
-// Las tribunas largas (rectas) tienen longitud A-B y se ven a los costados;
-// las cabeceras (curvas) tienen radio B/2 y se ven en los extremos.
+// La condición exacta es: si |cos(th)| * A < B → tramo recto, sino semicírculo.
+// En el tramo recto, X = (A/2) · cos(th), lo que barre desde -(A/2) hasta (A/2)
+// cuando th varía en el rango. Y = ±B/2 (constante en cada lado recto), así
+// el borde queda PERFECTAMENTE recto y plano (no curvado).
 function ptRing(u: number, th: number) {
   const a = ax(u), b = by(u)
   const c = Math.cos(th), s = Math.sin(th)
-  // Posición X del centro del semicírculo. Si c > 0, el centro está a la
-  // derecha; si c < 0, a la izquierda.
+  // Centro del semicírculo: a la derecha si c > 0, a la izquierda si c < 0.
   const halfStraight = (a - b) / 2
   const circleCenter = c >= 0 ? halfStraight : -halfStraight
-  // Si |c| * a < b, el ángulo cae en el tramo recto: el punto es (c*a/2, ±b/2).
-  // Sino, cae en el semicírculo: punto en el círculo de centro (circleCenter, 0)
-  // radio b/2, en la dirección (c, s).
+  // Condición del tramo recto: el punto cae en el lado recto si la proyección
+  // en X del ángulo (|c|·a) es menor que el ancho B. Sino, cae en el semicírculo.
   if (Math.abs(c) * a < b) {
+    // Tramo recto: Y = ±b/2 (constante, borde perfectamente recto),
+    // X = (a/2)·cos(th) barre todo el largo recto.
     return { x: (a / 2) * c, y: (b / 2) * (s >= 0 ? 1 : -1) }
   }
+  // Semicírculo: punto en círculo de centro (circleCenter, 0), radio b/2,
+  // en dirección (c, s).
   return { x: circleCenter + (b / 2) * c, y: (b / 2) * s }
 }
 
