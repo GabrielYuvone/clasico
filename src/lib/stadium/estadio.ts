@@ -103,13 +103,35 @@ const Z_TOP = (bands[bands.length - 1] as any).z + RISE
 function ax(u: number) { return A_IN + (A_OUT - A_IN) * (u / uTotal) }
 function by(u: number) { return B_IN + (B_OUT - B_IN) * (u / uTotal) }
 function nx(u: number) { return N_IN + (N_OUT - N_IN) * (u / uTotal) }
+
+// Discorectángulo (stadium shape): rectángulo con semicírculos en los extremos.
+// Esta es la forma REAL de un estadio de fútbol: dos tribunas laterales rectas
+// y largas (los lados largos del rectángulo, paralelos al eje Y) y dos
+// cabeceras curvas en los extremos (los semicírculos, paralelos al eje X).
+//
+// Para cada ángulo th, calculamos el punto en el perímetro:
+//   - En el rango |cos(th)| < B/A: el punto está en uno de los lados rectos
+//     (perpendicular al eje Y), a distancia B/2 del eje X.
+//   - En el rango |cos(th)| >= B/A: el punto está en uno de los semicírculos,
+//     cuyo centro está a distancia (A-B)/2 del origen y radio B/2.
+//
+// A es el "largo total" del estadio (eje X), B es el "ancho total" (eje Y).
+// Las tribunas largas (rectas) tienen longitud A-B y se ven a los costados;
+// las cabeceras (curvas) tienen radio B/2 y se ven en los extremos.
 function ptRing(u: number, th: number) {
-  const n = nx(u), e = 2 / n
+  const a = ax(u), b = by(u)
   const c = Math.cos(th), s = Math.sin(th)
-  return {
-    x: (c < 0 ? -1 : 1) * Math.pow(Math.abs(c), e) * ax(u),
-    y: (s < 0 ? -1 : 1) * Math.pow(Math.abs(s), e) * by(u),
+  // Posición X del centro del semicírculo. Si c > 0, el centro está a la
+  // derecha; si c < 0, a la izquierda.
+  const halfStraight = (a - b) / 2
+  const circleCenter = c >= 0 ? halfStraight : -halfStraight
+  // Si |c| * a < b, el ángulo cae en el tramo recto: el punto es (c*a/2, ±b/2).
+  // Sino, cae en el semicírculo: punto en el círculo de centro (circleCenter, 0)
+  // radio b/2, en la dirección (c, s).
+  if (Math.abs(c) * a < b) {
+    return { x: (a / 2) * c, y: (b / 2) * (s >= 0 ? 1 : -1) }
   }
+  return { x: circleCenter + (b / 2) * c, y: (b / 2) * s }
 }
 
 // ---------- hinchas ----------
